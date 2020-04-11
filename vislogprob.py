@@ -1,42 +1,13 @@
 import numpy as np
-from matplotlib import pyplot as plt
-import seaborn as sns
 import pandas as pd
 
-sns.set()
 
-def vis_logprob(dados):
-    x = np.sort(dados)
+def logprob(data):
+    x = np.sort(data)
     y = np.arange(1, len(x)+1)/len(x)
-    
-    fig = plt.figure(figsize=(14,10))
-    
-    plt.grid(True, which="both")
-    plt.semilogy(y[::-1], x, 'o', markersize=2.5)
-    plt.title(str(dados.name) +' Log x Probabilidade Acumulada')
-    plt.xlabel('Probabilidade (%)')
-    plt.ylabel(str(dados.name))
-    
-    plt.show()
-    
-    vis_dist(dados)
 
     return x, y
 
-
-def vis_dist(dados):
-
-    fig = plt.figure(figsize=(14,4))
-
-    plt.subplot(121)
-    sns.distplot(dados, color='orange')
-    plt.title('Distribuição '+str(dados.name))
-
-    plt.subplot(122)
-    sns.boxplot(dados, color='orange')
-    plt.title('Boxplot '+str(dados.name))
-
-    plt.show()
 
 
 def determinar_param(dados):
