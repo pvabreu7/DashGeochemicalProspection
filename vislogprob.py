@@ -3,8 +3,8 @@ import pandas as pd
 
 
 def logprob(data):
-    x = np.sort(data)
-    y = np.arange(1, len(x)+1)/len(x)
+    y = np.sort(data)
+    x = np.arange(1, len(y)+1)/len(y)
 
     return x, y
 
