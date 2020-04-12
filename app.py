@@ -15,11 +15,6 @@ data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashG
 x, y = vislogprob.logprob(data['Bi (PPM)'])
 
 fig = px.scatter(x=x[::-1]*100, y=y, title='Bi (PPM) x Cumulative Probability', log_x=True, log_y=True, labels={'x':'Probability (%)', 'y': 'Bi (ppm)'})
-#fig = plt.figure()
-#plt.loglog(x[::-1], y)
-#plt.xlabel('Probability (%)')
-#plt.ylabel('Bi (ppm)')
-#plt.title('Bi (PPM) x Cumulative Probability')
 
 def generate_table(dataframe, max_rows=10):
     return html.Table([
@@ -35,24 +30,30 @@ def generate_table(dataframe, max_rows=10):
     ])
 
 app.layout = html.Div(children=[
-    html.H1(children='Geochemical Prospection', style={'textAlign': 'left', 'color': '#054b66'}), # no Html, "style" é um string separado por ;
-                                                                                       # No dash, basta passar um dicionário
+    html.H1(children='Geochemical Prospection', style={'textAlign': 'left', 'color': '#054b66'}),
+
     html.Div(children='''
         Workflow for Geochemical Prospection utilyzing Dash and K-means Clustering
     '''),
 
     html.Hr(),
+
     html.Div([
         html.Div([
-            dcc.Graph(
-                id='example-graph',
-                figure=fig,
-                style={'color': '#054b66'}, className='six columns'
-        )]),
-        html.Div([
-            generate_table(data, max_rows=20)
-        ], className='six columns')
-])])
+            html.Div([
+                generate_table(data, max_rows=20)
+            ], className='four columns'),
+
+            html.Div([
+                dcc.Graph(
+                    id='example-graph',
+                    figure=fig,
+                    style={'color': '#054b66'}, className='eight columns'
+            )])
+        ])
+    ], className='row'
+    )
+])
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte
