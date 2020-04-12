@@ -2,6 +2,7 @@ import dash
 import dash_core_components as dcc  # São componentes interativos gerados com js, html e css através do reactjs
 import dash_html_components as html # Possui um componente para cada tag html
 import plotly.express as px
+from matplotlib import pyplot as plt
 import pandas as pd
 import vislogprob
 import numpy as np
@@ -11,9 +12,14 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Load data:
 data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashGeochemicalProspection/Data/data_asbi.csv')
-x, y= vislogprob.logprob(data['As (PPM)'])
+x, y = vislogprob.logprob(data['Bi (PPM)'])
 
-fig = px.scatter(x=x, y=y[::-1])
+fig = px.scatter(x=x[::-1]*100, y=y, title='Bi (PPM) x Cumulative Probability', log_x=True, log_y=True, )
+#fig = plt.figure()
+#plt.loglog(x[::-1], y)
+#plt.xlabel('Probability (%)')
+#plt.ylabel('Bi (ppm)')
+#plt.title('Bi (PPM) x Cumulative Probability')
 
 def generate_table(dataframe, max_rows=10):
     return html.Table([
@@ -39,7 +45,7 @@ app.layout = html.Div(children=[
     dcc.Graph(
         id='example-graph',
         figure=fig,
-        style={'color': '#054b66'}
+        style={'color': '#054b66'},
     ),
 
     generate_table(data)
