@@ -8,13 +8,13 @@ import vislogprob
 import numpy as np
 
 # Style:
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/amyoshino/pen/jzXypZ.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Load data:
 data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashGeochemicalProspection/Data/data_asbi.csv')
 x, y = vislogprob.logprob(data['Bi (PPM)'])
 
-fig = px.scatter(x=x[::-1]*100, y=y, title='Bi (PPM) x Cumulative Probability', log_x=True, log_y=True, )
+fig = px.scatter(x=x[::-1]*100, y=y, title='Bi (PPM) x Cumulative Probability', log_x=True, log_y=True, labels={'x':'Probability (%)', 'y': 'Bi (ppm)'})
 #fig = plt.figure()
 #plt.loglog(x[::-1], y)
 #plt.xlabel('Probability (%)')
@@ -30,7 +30,8 @@ def generate_table(dataframe, max_rows=10):
             html.Tr([
                 html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
             ]) for i in range(min(len(dataframe), max_rows))
-        ])
+        ]),
+
     ])
 
 app.layout = html.Div(children=[
@@ -41,15 +42,17 @@ app.layout = html.Div(children=[
     '''),
 
     html.Hr(),
-
-    dcc.Graph(
-        id='example-graph',
-        figure=fig,
-        style={'color': '#054b66'},
-    ),
-
-    generate_table(data)
-])
+    html.Div([
+        html.Div([
+            dcc.Graph(
+                id='example-graph',
+                figure=fig,
+                style={'color': '#054b66'}, className='six columns'
+        )]),
+        html.Div([
+            generate_table(data, max_rows=20)
+        ], className='six columns')
+])])
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte
