@@ -36,7 +36,8 @@ app.layout = html.Div(children=[
 
                     html.Div([dcc.Upload(html.Button('Upload your data', style={'width':'100%'}))]),
 
-                    html.H4('1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'20px'})
+                    html.H4('1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'20px'}),
+                    dcc.Dropdown(options=[{"label": i, "value": i} for i in data.columns])
 
                 ], className='row'),
 
@@ -59,9 +60,11 @@ app.layout = html.Div(children=[
                     figure=fig,
                     style={'color': '#054b66'}
                 )
-            ], className='seven columns', style={'border-style':'solid','border-width':'thin', 'margin': '20px', 'border-radius':'8px'})])
+            ], className='seven columns', style={'border-style':'solid','border-width':'thin', 'margin': '20px', 'border-radius':'8px', 'height':'550px'})])
 
-    ], className='row')
+    ], className='row'),
+
+    html.Hr()
 ])
 
 if __name__ == '__main__':
