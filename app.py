@@ -44,20 +44,14 @@ app.layout = html.Div(children=[
 
                 ], className='row'),
                     html.Div([
-                        dcc.Tabs(id='tabs', value='Data Table', children=[
+                        dcc.Tabs(id='tabs', value='tab-1', children=[
                             dcc.Tab(children=[
-                                dash_table.DataTable(columns=[{"name": i, "id": i} for i in data.columns], data=data.to_dict('records'))
-                            ]),
-                            dcc.Tab(label='Tab two', value='tab-2')
-                        ]),
-                    dash_table.DataTable(
-                        id='table',
-                        columns=[{"name": i, "id": i} for i in data.columns],
-                        data=data.to_dict('records'),
-                        style_table={'overflowX': 'scroll',
-                                     'overflowY': 'scroll',
-                                     'height':'380px'}
-                    )])
+                                dash_table.DataTable(columns=[{"name": i, "id": i} for i in data.columns], data=data.to_dict('records'), style_table={'overflowX':'scroll',
+                                                                                                                                                      'overflowY':'scroll',
+                                                                                                                                                      'height':'380px'})
+                            ], label='Data Table', id='Data Table', value='tab-1'),
+                            dcc.Tab(label='Frequencies Table', value='tab-2')
+                        ])])
                 ], className='four columns', style={'border-style':'solid','border-width':'thin', 'padding':'5px', 'border-radius':'8px', 'height':'auto'})]),
 
         html.Div([   # Classe Caixa
