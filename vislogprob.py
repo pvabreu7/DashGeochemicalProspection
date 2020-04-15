@@ -17,7 +17,7 @@ def determinar_param(dados):
     t = np.min(dados)
     Ai = (T-t)/k
     std = np.std(dados)
-    print(dados.describe())
+    #print(dados.describe())
     return T, t, k, Ai, std
 
 classe1 = []
