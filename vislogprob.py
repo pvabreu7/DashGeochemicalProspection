@@ -20,19 +20,21 @@ def determinar_param(dados):
     #print(dados.describe())
     return T, t, k, Ai, std
 
-classe1 = []
-classe2 = []
-classe3 = []
-classe4 = []
-classe5 = []
-classe6 = []
-classe7 = []
-classe8 = []
-classe9 = []
-contagem = []
+
 
 
 def classes_frequencias(dados):
+    classe1 = []
+    classe2 = []
+    classe3 = []
+    classe4 = []
+    classe5 = []
+    classe6 = []
+    classe7 = []
+    classe8 = []
+    classe9 = []
+    contagem = []
+    
     maximo, minimo, k, Ai, std = determinar_param(dados)
 
     for i in dados:    

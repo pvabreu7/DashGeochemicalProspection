@@ -16,7 +16,9 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Load data:
 data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashGeochemicalProspection/Data/data_asbi.csv')
 x, y = vislogprob.logprob(data['Bi (PPM)'])
-fig = px.scatter(x=x[::-1]*100, y=y, title='Bi (PPM) x Cumulative Probability', log_x=True, log_y=True, labels={'x':'Probability (%)', 'y': 'Bi (ppm)'})
+freq_df = vislogprob.tabela_frequencias(data['Bi (PPM)'])
+
+#fig = px.scatter(x=x[::-1]*100, y=y, title='Bi (PPM) x Cumulative Probability', log_x=True, log_y=True, labels={'x':'Probability (%)', 'y': 'Bi (ppm)'})
 
 
 
@@ -35,7 +37,7 @@ app.layout = html.Div(children=[
                 html.Div([
                     html.Div([html.H3(children='1. Load table:', style={'textAlign': 'center', 'color': '#054b66'})]),
 
-                    html.Div([dcc.Upload(html.Button('Upload your data', style={'width':'100%'}))]),
+                    html.Div([dcc.Upload(html.Button('Upload your data', style={'width':'100%'}), id='upload-data', multiple=False)]),
 
                     html.H4('1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'20px'}),
                     dcc.Dropdown(options=[{"label": i, "value": i} for i in data.columns], id='select-element', value='Bi (PPM)',style={'margin-bottom':'20px'})
@@ -43,14 +45,14 @@ app.layout = html.Div(children=[
 
 
                 ], className='row'),
-                    html.Div([
-                        dcc.Tabs(id='tabs', value='tab-1', children=[
+                    html.Div([       # Div para as tabs
+                        dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
+                            dcc.Tab(children=[                              # Data-Table
+                                dash_table.DataTable(id='Data Table', columns=[{"name": i, "id": i} for i in data.columns], data=data.to_dict('records'), style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
+                            ], label='Data Table', value='tab-1'),
                             dcc.Tab(children=[
-                                dash_table.DataTable(columns=[{"name": i, "id": i} for i in data.columns], data=data.to_dict('records'), style_table={'overflowX':'scroll',
-                                                                                                                                                      'overflowY':'scroll',
-                                                                                                                                                      'height':'380px'})
-                            ], label='Data Table', id='Data Table', value='tab-1'),
-                            dcc.Tab(label='Frequencies Table', value='tab-2')
+                                dash_table.DataTable(id='Freq Table', columns=[{"name": i, "id": i} for i in freq_df.columns], data=freq_df.to_dict('records'), style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
+                            ], label='Frequencies Table', value='tab-2')      # Frequency Table
                         ])])
                 ], className='four columns', style={'border-style':'solid','border-width':'thin', 'padding':'5px', 'border-radius':'8px', 'height':'auto'})]),
 
@@ -62,7 +64,7 @@ app.layout = html.Div(children=[
                     id='prob-graph',
                     style={'color': '#054b66'}
                 )
-            ], className='eight columns', style={'border-style':'solid','border-width':'thin', 'margin': '20px', 'border-radius':'8px', 'height':'550px'})])
+            ], className='six columns', style={'border-style':'solid','border-width':'thin', 'margin': '20px', 'border-radius':'8px', 'height':'550px'})])
 
     ], className='row'),
 
@@ -96,10 +98,18 @@ def update_graph(element_column):
                 'type': 'log'
             },
             title= str(element_column)+' x Cumulative Probability',
-            margin={'l': 40, 'b': 40, 't': 10, 'r': 0},
+            margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
             hovermode='closest'
         )
     }
+
+@app.callback(
+    Output('Freq Table', 'data'),                   # A saída são as dados da tabela
+    [Input('select-element', 'value')])             # Entrada: valor da tabela
+def update_freq(element_column):
+    freq_df = vislogprob.tabela_frequencias(data[element_column])
+
+    return freq_df.to_dict('records')
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte
