@@ -142,7 +142,8 @@ def update_graph(element_column, data_dict):
                     'size': 5,
                     'opacity': 1
                 }
-            )],
+            ),
+            ],
             'layout': dict(
                 xaxis={
                     'title': 'Cumulative Probability (%)',
@@ -159,18 +160,30 @@ def update_graph(element_column, data_dict):
             )
         }
         cluster_fig = {
-            'data': [dict(
+            'data': [
+                dict(
+                    x=[visualizer.elbow_value_, visualizer.elbow_value_],
+                    y=[0, np.max(visualizer.k_scores_)],
+                    mode='lines',
+                    line={'color': '#c44e52', 'dash': 'dashdot'},
+                    name='Number of clusters: '+str(visualizer.elbow_value_)
+                ),
+                dict(
                 x=visualizer.k_values_,
                 y=visualizer.k_scores_,
                 mode='lines'+'markers',
-                line={'color':'#c44e52'},
+                line={'color':'#ccb974'},
+                name='Distortion Score',
                 marker={
                     'size': 12,
                     'opacity': 1,
                     'color':'#55a868',
                     'line': {'width': 0.5, 'color': '#c44e52'}
                 }
-            )],
+
+            ),
+
+            ],
             'layout': dict(
                 xaxis={
                     'title': 'Number of K clusters'
@@ -180,9 +193,11 @@ def update_graph(element_column, data_dict):
                 },
                 margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
                 hovermode='closest',
-                plot_bgcolor='#eaeaf2'
+                plot_bgcolor='#eaeaf2',
+                legend_orientation="h"
             )
         }
+
         return probgraf_fig, cluster_fig
 
 @app.callback(
@@ -195,7 +210,6 @@ def update_freq(element_column, data_dict):
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         freq_df = vislogprob.tabela_frequencias(df[element_column])
-        print(freq_df.columns)
         return freq_df.to_dict('records')
 
 def parse_contents(contents, filename):
