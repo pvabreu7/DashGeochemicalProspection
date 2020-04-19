@@ -34,7 +34,7 @@ def classes_frequencias(dados):
     classe8 = []
     classe9 = []
     contagem = []
-    
+
     maximo, minimo, k, Ai, std = determinar_param(dados)
 
     for i in dados:    
