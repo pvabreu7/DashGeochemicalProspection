@@ -5,8 +5,8 @@ import dash_table
 import dash_core_components as dcc  # São componentes interativos gerados com js, html e css através do reactjs
 import dash_html_components as html # Possui um componente para cada tag html
 from dash.dependencies import Input, Output, State
-import plotly.express as px
-
+from yellowbrick.cluster import KElbowVisualizer
+from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 import pandas as pd
 import vislogprob
@@ -15,10 +15,7 @@ import numpy as np
 # Style:
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-# Load data:
-#data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashGeochemicalProspection/Data/data_asbi.csv')
-#x, y = vislogprob.logprob(data['Bi (PPM)'])
-#freq_df = vislogprob.tabela_frequencias(data['Bi (PPM)'])
+
 init_fig = {
             'data': [dict(
                 x = [],
@@ -36,7 +33,8 @@ init_fig = {
                 },
                 title= 'Load your Data first',
                 margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
-                hovermode='closest'
+                hovermode='closest',
+                plot_bgcolor= '#eaeaf2'
             )
         }
 
@@ -90,16 +88,28 @@ app.layout = html.Div(children=[
                                 dash_table.DataTable(id='Freq Table', columns=[{'name':'Mínimo', 'id':'Mínimo'}, {'name':'Máximo', 'id':'Máximo'}, {'name':'Mínimo (log)', 'id':'Mínimo (log)'}, {'name':'Frequência Absoluta', 'id':'Frequência Absoluta'}, {'name':'Frequência Relativa (%)', 'id':'Frequência Relativa (%)'}, {'name':'Frequência Acumulada', 'id':'Frequência Acumulada'}, {'name':'Frequência Acumulada Direta (%)', 'id':'Frequência Acumulada Direta (%)'}, {'name':'Frequência Acumulada Invertida (%)', 'id':'Frequência Acumulada Invertida (%)'}], style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
                             ], label='Frequencies Table', value='tab-2')      # Frequency Table
                         ])])
-                ], className='four columns', style={'border-style':'solid','border-width':'thin', 'padding':'5px', 'border-radius':'8px', 'height':'auto'})]),
+                ], className='three columns', style={'border-style':'solid','margin': '10px', 'border-width':'thin', 'padding':'5px', 'border-radius':'8px', 'height':'auto'})]),
+
+        html.Div([  # Classe Caixa
+            html.Div([  # classe 7 colunas
+                html.H3(children='2. Number of Clusters by Elbow Method:',
+                        style={'textAlign': 'center', 'color': '#054b66'}),
+
+                dcc.Graph(
+                    id='cluster-graph', figure=init_fig
+                )
+            ], className='four columns',
+                style={'border-style': 'solid', 'border-width': 'thin', 'margin': '10px', 'border-radius': '8px',
+                       'height': '550px'})]),
 
         html.Div([   # Classe Caixa
             html.Div([   # classe 7 colunas
-                html.H3(children='2. Visualize Log-Probability curve:', style={'textAlign': 'center', 'color': '#054b66'}),
+                html.H3(children='3. Visualize Log-Probability curve:', style={'textAlign': 'center', 'color': '#054b66'}),
 
                 dcc.Graph(
                     id='prob-graph', figure=init_fig
                 )
-            ], className='six columns', style={'border-style':'solid','border-width':'thin', 'margin': '20px', 'border-radius':'8px', 'height':'550px'})])
+            ], className='five columns', style={'border-style':'solid','border-width':'thin', 'margin': '10px', 'border-radius':'8px', 'height':'550px'})])
 
     ], className='row'),
 
@@ -107,17 +117,23 @@ app.layout = html.Div(children=[
 ])
 
 @app.callback(
-    Output('prob-graph', 'figure'),        # A saída é a figura do gráfico
+    [Output('prob-graph', 'figure'),
+     Output('cluster-graph', 'figure')],        # A saída é a figura do gráfico
     [Input('select-element', 'value'),
      Input('Data Table', 'data')])             # Entrada: valor da tabela,
 def update_graph(element_column, data_dict):
     if element_column == None:
-        return init_fig
+        return init_fig, init_fig
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         x, y = vislogprob.logprob(df[element_column])
+        X = np.array([x,y])
+        #cluster_fig, ax = plt.subplots()
+        #plt.scatter(x=[], y=[])
+        visualizer = KElbowVisualizer(KMeans(), k=(1, 8))
+        visualizer.fit(X.transpose())
 
-        return {
+        probgraf_fig = {
             'data': [dict(
                 x = x[::-1] * 100,
                 y=y,
@@ -138,9 +154,36 @@ def update_graph(element_column, data_dict):
                 },
                 title= str(element_column)+' x Cumulative Probability',
                 margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
-                hovermode='closest'
+                hovermode='closest',
+                plot_bgcolor='#eaeaf2'
             )
         }
+        cluster_fig = {
+            'data': [dict(
+                x=visualizer.k_values_,
+                y=visualizer.k_scores_,
+                mode='lines'+'markers',
+                line={'color':'#c44e52'},
+                marker={
+                    'size': 12,
+                    'opacity': 1,
+                    'color':'#55a868',
+                    'line': {'width': 0.5, 'color': '#c44e52'}
+                }
+            )],
+            'layout': dict(
+                xaxis={
+                    'title': 'Number of K clusters'
+                },
+                yaxis={
+                    'title': 'Distortion Score'
+                },
+                margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
+                hovermode='closest',
+                plot_bgcolor='#eaeaf2'
+            )
+        }
+        return probgraf_fig, cluster_fig
 
 @app.callback(
     Output('Freq Table', 'data'),                   # A saída são as dados da tabela
@@ -191,7 +234,6 @@ def update_output(list_of_contents, list_of_names):
             zip(list_of_contents, list_of_names)]
         columns, data = children[0]
         values = []
-
         for i in columns:
             if i['name'][0:7] != 'Unnamed':
                 values.append(i['name'])
