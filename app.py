@@ -16,10 +16,29 @@ import numpy as np
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Load data:
-data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashGeochemicalProspection/Data/data_asbi.csv')
-x, y = vislogprob.logprob(data['Bi (PPM)'])
-freq_df = vislogprob.tabela_frequencias(data['Bi (PPM)'])
-init_fig = px.scatter(x=[], y=[], title='Load your data', log_y=True, log_x=True)
+#data = pd.read_csv('C:/Users/Pedro/PycharmProjects/Geochemical-Prospection/DashGeochemicalProspection/Data/data_asbi.csv')
+#x, y = vislogprob.logprob(data['Bi (PPM)'])
+#freq_df = vislogprob.tabela_frequencias(data['Bi (PPM)'])
+init_fig = {
+            'data': [dict(
+                x = [],
+                y=[],
+                mode='markers'
+            )],
+            'layout': dict(
+                xaxis={
+                    'title': 'Cumulative Probability (%)',
+                    'type': 'log'
+                },
+                yaxis={
+                    'title': 'Element axis',
+                    'type': 'log'
+                },
+                title= 'Load your Data first',
+                margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
+                hovermode='closest'
+            )
+        }
 
 
 app.layout = html.Div(children=[
@@ -57,7 +76,7 @@ app.layout = html.Div(children=[
                     )),
 
                     html.H4('1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'20px'}),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in data.columns], id='select-element', value='Bi (PPM)',style={'margin-bottom':'20px'})
+                    dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'})
 
 
 
@@ -65,10 +84,10 @@ app.layout = html.Div(children=[
                     html.Div([       # Div para as tabs
                         dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
                             dcc.Tab(children=[                              # Data-Table
-                                dash_table.DataTable(id='Data Table', columns=[{"name": i, "id": i} for i in data.columns], data=data.to_dict('records'), style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
+                                dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0,6)], style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
                             ], label='Data Table', value='tab-1'),
                             dcc.Tab(children=[
-                                dash_table.DataTable(id='Freq Table', columns=[{"name": i, "id": i} for i in freq_df.columns], data=freq_df.to_dict('records'), style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
+                                dash_table.DataTable(id='Freq Table', columns=[{'name':'Mínimo', 'id':'Mínimo'}, {'name':'Máximo', 'id':'Máximo'}, {'name':'Mínimo (log)', 'id':'Mínimo (log)'}, {'name':'Frequência Absoluta', 'id':'Frequência Absoluta'}, {'name':'Frequência Relativa (%)', 'id':'Frequência Relativa (%)'}, {'name':'Frequência Acumulada', 'id':'Frequência Acumulada'}, {'name':'Frequência Acumulada Direta (%)', 'id':'Frequência Acumulada Direta (%)'}, {'name':'Frequência Acumulada Invertida (%)', 'id':'Frequência Acumulada Invertida (%)'}], style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
                             ], label='Frequencies Table', value='tab-2')      # Frequency Table
                         ])])
                 ], className='four columns', style={'border-style':'solid','border-width':'thin', 'padding':'5px', 'border-radius':'8px', 'height':'auto'})]),
@@ -78,7 +97,7 @@ app.layout = html.Div(children=[
                 html.H3(children='2. Visualize Log-Probability curve:', style={'textAlign': 'center', 'color': '#054b66'}),
 
                 dcc.Graph(
-                    id='prob-graph'
+                    id='prob-graph', figure=init_fig
                 )
             ], className='six columns', style={'border-style':'solid','border-width':'thin', 'margin': '20px', 'border-radius':'8px', 'height':'550px'})])
 
@@ -129,11 +148,12 @@ def update_graph(element_column, data_dict):
      Input('Data Table', 'data')])             # Entrada: valor da tabela
 def update_freq(element_column, data_dict):
     if element_column == None:
-        return None
-    df = pd.DataFrame.from_dict(data_dict, 'columns')
-    freq_df = vislogprob.tabela_frequencias(df[element_column])
-
-    return freq_df.to_dict('records')
+        return [{"name": '', "id": ''} for i in range(0,6)]
+    else:
+        df = pd.DataFrame.from_dict(data_dict, 'columns')
+        freq_df = vislogprob.tabela_frequencias(df[element_column])
+        print(freq_df.columns)
+        return freq_df.to_dict('records')
 
 def parse_contents(contents, filename):
     content_type, content_string = contents.split(',')
@@ -164,7 +184,7 @@ def parse_contents(contents, filename):
               [State('upload-data', 'filename')])
 def update_output(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return 
+        return [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,6)], None
     if list_of_contents is not None:
         children = [
             parse_contents(c, n) for c, n in
