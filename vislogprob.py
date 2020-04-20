@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.cluster import KMeans
 
 
 def logprob(data):
@@ -117,3 +118,40 @@ def tabela_frequencias(dados):
     freq.drop(axis=0, index=freq[freq['Frequência Absoluta'] == 0].index, inplace=True)
 
     return freq
+
+def clustered_df(X, n_clusters):
+    model = KMeans(n_clusters=n_clusters, random_state=3425)
+    model.fit(X)
+    labels = model.predict(X)
+    df_clustered = pd.DataFrame()
+    df_clustered.insert(0, 'Prob', X[:,0]*100)
+    df_clustered.insert(1, 'Value', X[:,1])
+    df_clustered.insert(2, 'Class', labels)
+
+    means = []
+
+    for classe in df_clustered.Class.unique():
+        mean = np.mean(df_clustered.Value[df_clustered.Class == classe])
+        means.append(mean)
+
+    classes_zip = zip(df_clustered.Class.unique(), means)
+    classes_zip = list(classes_zip)
+    classes_zip = sorted(classes_zip, key=lambda x: x[1], reverse=True)
+
+    anomalous = classes_zip[0][0]
+
+    ordem = 1
+
+    for n in classes_zip:
+        if n[0] == anomalous:
+            df_clustered.Class = df_clustered.Class.apply(lambda row: 'Anomalous Sample'
+            if row == anomalous
+            else row)
+        else:
+            df_clustered.Class = df_clustered.Class.apply(
+                lambda row: str(ordem)+'º Order Background Sample'
+                if row == n[0]
+                else row)
+            ordem = ordem + 1
+    print(df_clustered.columns)
+    return df_clustered
