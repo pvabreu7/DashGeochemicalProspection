@@ -11,33 +11,13 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import vislogprob
 import numpy as np
-
+import plotly.express as px
 # Style:
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
-init_fig = {
-            'data': [dict(
-                x = [],
-                y=[],
-                mode='markers'
-            )],
-            'layout': dict(
-                xaxis={
-                    'title': 'Cumulative Probability (%)',
-                    'type': 'log'
-                },
-                yaxis={
-                    'title': 'Element axis',
-                    'type': 'log'
-                },
-                title= 'Load your Data first',
-                margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
-                hovermode='closest',
-                plot_bgcolor= '#eaeaf2'
-            )
-        }
-
+# Empty Graphs
+init_fig = px.scatter(x=[], y=[], title='Load Data First', log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
+init_fig.update_layout(margin={'l': 60, 'b': 40, 't': 40, 'r': 60})
 
 app.layout = html.Div(children=[
     html.H1(children='Geochemical Prospection', style={'textAlign': 'left', 'color': '#054b66'}),
@@ -128,75 +108,27 @@ def update_graph(element_column, data_dict):
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         x, y = vislogprob.logprob(df[element_column])
         X = np.array([x,y])
-        #cluster_fig, ax = plt.subplots()
-        #plt.scatter(x=[], y=[])
+
         visualizer = KElbowVisualizer(KMeans(), k=(1, 8))
         visualizer.fit(X.transpose())
 
-        probgraf_fig = {
-            'data': [dict(
-                x = x[::-1] * 100,
-                y=y,
-                mode='markers',
-                marker={
-                    'size': 5,
-                    'opacity': 1
-                }
-            ),
-            ],
-            'layout': dict(
-                xaxis={
-                    'title': 'Cumulative Probability (%)',
-                    'type': 'log'
-                },
-                yaxis={
-                    'title': str(element_column),
-                    'type': 'log'
-                },
-                title= str(element_column)+' x Cumulative Probability',
-                margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
-                hovermode='closest',
-                plot_bgcolor='#eaeaf2'
-            )
-        }
-        cluster_fig = {
-            'data': [
-                dict(
-                    x=[visualizer.elbow_value_, visualizer.elbow_value_],
-                    y=[0, np.max(visualizer.k_scores_)],
-                    mode='lines',
-                    line={'color': '#c44e52', 'dash': 'dashdot'},
-                    name='Number of clusters: '+str(visualizer.elbow_value_)
-                ),
-                dict(
-                x=visualizer.k_values_,
-                y=visualizer.k_scores_,
-                mode='lines'+'markers',
-                line={'color':'#ccb974'},
-                name='Distortion Score',
-                marker={
-                    'size': 12,
-                    'opacity': 1,
-                    'color':'#55a868',
-                    'line': {'width': 0.5, 'color': '#c44e52'}
-                }
+        df_clustered = vislogprob.clustered_df(X.transpose(), visualizer.elbow_value_)
 
-            ),
+        probgraf_fig = px.scatter(x=df_clustered.Prob[::-1], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
+                                  labels={'x':'Probability (%) ', 'y':str(element_column)+''}, title=str(element_column)+' x Cumulative Probability')
+        probgraf_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60})
+        probgraf_fig.update_layout(legend_orientation="h")
 
-            ],
-            'layout': dict(
-                xaxis={
-                    'title': 'Number of K clusters'
-                },
-                yaxis={
-                    'title': 'Distortion Score'
-                },
-                margin={'l': 60, 'b': 40, 't': 40, 'r': 60},
-                hovermode='closest',
-                plot_bgcolor='#eaeaf2',
-                legend_orientation="h"
-            )
-        }
+        cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
+        cluster_fig.update_traces(mode="markers+lines", hovertemplate=None)
+        cluster_fig.add_shape(dict(type='line',
+                                   x0=visualizer.elbow_value_,
+                                   y0=-np.mean(visualizer.k_scores_),
+                                   x1=visualizer.elbow_value_,
+                                   y1=np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_),
+                                   line=dict(dash='dashdot', color='#EF553B')))
+        cluster_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60})
+        cluster_fig.update_layout(legend_orientation="h")
 
         return probgraf_fig, cluster_fig
 
