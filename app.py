@@ -18,7 +18,8 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Empty Graphs
 init_fig = px.scatter(x=[], y=[], title='Load Data First', log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
 init_fig.update_layout(margin={'l': 60, 'b': 40, 't': 40, 'r': 60})
-
+map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
+map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10})
 app.layout = html.Div(children=[
     html.H1(children='Geochemical Prospection', style={'textAlign': 'left', 'color': '#054b66'}),
 
@@ -93,7 +94,12 @@ app.layout = html.Div(children=[
 
     ], className='row'),
 
-    html.Hr()
+    html.Div([
+        html.Div([
+            dcc.Graph(id='map', figure=map_init_fig)
+        ], className='six columns'
+    )], className='row', style={'border-style':'solid','border-width':'thin', 'margin': '10px', 'border-radius':'8px'})
+
 ])
 
 @app.callback(
