@@ -33,7 +33,7 @@ app.layout = html.Div(children=[
         html.Div([  # classe caixa
             html.Div([  # classe 5 colunas
                 html.Div([
-                    html.Div([html.H3(children='1. Load table:', style={'textAlign': 'center', 'color': '#054b66'})]),
+                    html.Div([html.H5(children='1. Load table:', style={'textAlign': 'center', 'color': '#054b66'})]),
 
                     html.Div(dcc.Upload(
                         id='upload-data',
@@ -55,9 +55,17 @@ app.layout = html.Div(children=[
                     )),
 
                     html.H4('1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'20px'}),
-                    dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'})
+                    dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'}, placeholder='Select Geochemical Element...'),
 
-
+                    html.Div([
+                    html.Div([
+                        dcc.Dropdown(id='select-lat', placeholder='Select Latitude...')
+                    ], style={'margin-bottom':'10px', 'width':'48%', 'display': 'inline-block'}),
+                    html.Div([
+                        dcc.Dropdown(id='select-lon', placeholder='Select Longitude...')
+                    ], style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
+                    ]),
+                    html.P('Obs: coordinates must be geographic')
 
                 ], className='row'),
                     html.Div([       # Div para as tabs
@@ -97,8 +105,8 @@ app.layout = html.Div(children=[
     html.Div([
         html.Div([
             dcc.Graph(id='map', figure=map_init_fig)
-        ], className='six columns'
-    )], className='row', style={'border-style':'solid','border-width':'thin', 'margin': '10px', 'border-radius':'8px'})
+        ], className='six columns', style={'border-style':'solid','border-width':'thin', 'margin': '10px', 'border-radius':'8px'}
+    )], className='row')
 
 ])
 
