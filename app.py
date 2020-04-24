@@ -58,12 +58,11 @@ app.layout = html.Div(children=[
                     dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'}, placeholder='Select Geochemical Element...'),
 
                     html.Div([
-                    html.Div([
-                        dcc.Dropdown(id='select-lat', placeholder='Select Latitude...')
-                    ], style={'margin-bottom':'10px', 'width':'48%', 'display': 'inline-block'}),
-                    html.Div([
-                        dcc.Dropdown(id='select-lon', placeholder='Select Longitude...')
-                    ], style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
+                        html.Div([dcc.Dropdown(id='select-lon', placeholder='Select Longitude (x)...')],
+                                 style={'margin-bottom':'10px', 'width':'48%', 'display': 'inline-block'}),
+
+                        html.Div([dcc.Dropdown(id='select-lat', placeholder='Select Latitude (y)...')],
+                                 style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
                     ]),
                     html.P('Obs: coordinates must be geographic')
 
@@ -182,12 +181,16 @@ def parse_contents(contents, filename):
 @app.callback([Output('Data Table', 'data'),
               Output('Data Table', 'columns'),
               Output('select-element', 'options'),
-              Output('select-element', 'value')],   # Output('select-element', 'options')],
+              Output('select-element', 'value'),
+              Output('select-lon', 'options'),
+              Output('select-lon', 'value'),
+              Output('select-lat', 'options'),
+              Output('select-lat', 'value')],
               [Input('upload-data', 'contents')],
               [State('upload-data', 'filename')])
 def update_output(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,6)], None
+        return [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,6)], None, [{"label": '', "value": ''} for i in range(0,6)], None, [{"label": '', "value": ''} for i in range(0,6)], None
     if list_of_contents is not None:
         children = [
             parse_contents(c, n) for c, n in
@@ -200,7 +203,28 @@ def update_output(list_of_contents, list_of_names):
         markdowns = [{"label": i, "value": i} for i in values]
         columns = [{"name": i, "id": i} for i in values]
 
-        return data, columns, markdowns, None
+        return data, columns, markdowns, None, markdowns, None, markdowns, None
+
+@app.callback(
+    Output('map', 'figure'),
+    [Input('Data Table', 'data'),
+    Input('select-lon', 'value'),
+    Input('select-lat', 'value')]
+)
+def update_map(data_dict, lon, lat):
+    map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5},
+                                        mapbox_style="carto-positron", zoom=4)
+    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+    if lon == None or lat == None:
+        return map_init_fig
+    else:
+        df = pd.DataFrame.from_dict(data_dict, 'columns')
+        map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
+        map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+        return map_init_fig
+
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte
