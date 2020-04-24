@@ -17,15 +17,30 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Empty Graphs
 init_fig = px.scatter(x=[], y=[], title='Load Data First', log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
-init_fig.update_layout(margin={'l': 60, 'b': 40, 't': 40, 'r': 60})
+init_fig.update_layout(margin={'l': 60, 'b': 40, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
 map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
 map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10})
-app.layout = html.Div(children=[
-    html.H1(children='Geochemical Prospection', style={'textAlign': 'left', 'color': '#054b66'}),
 
-    html.Div(children='''
-        Workflow for Geochemical Prospection utilyzing Dash and K-means Clustering
-    '''),
+app.layout = html.Div(children=[
+    dcc.Store(id="aggregate_data"),
+    # empty Div to trigger javascript file for graph resizing
+    html.Div(id="output-clientside"),
+    html.Div(
+        [
+            html.Div(
+                [
+                    html.H3(
+                        "Geochemical Prospection",
+                        style={"margin-bottom": "0px"},
+                    ),
+                    html.H5(
+                        "Workflow for Geochemical Prospection utilyzing Dash and K-means Clustering", style={"margin-top": "0px"}
+                    ),
+                ]
+            )
+        ],
+        id="title", style={'display':'flex', 'margin-bottom':'25px'}
+    ),
 
     html.Hr(), # Linha Divisória -> Começo da aplicação
 
@@ -48,7 +63,9 @@ app.layout = html.Div(children=[
                             'borderWidth': '1px',
                             'borderStyle': 'dashed',
                             'borderRadius': '5px',
-                            'textAlign': 'center'
+                            'textAlign': 'center',
+                            'margin-top':'10px',
+                            'margin-bottom':'10px'
                         },
                         # Allow multiple files to be uploaded
                         multiple=True
@@ -64,50 +81,93 @@ app.layout = html.Div(children=[
                         html.Div([dcc.Dropdown(id='select-lat', placeholder='Select Latitude (y)...')],
                                  style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
                     ]),
-                    html.P('Obs: coordinates must be geographic')
 
-                ], className='row'),
-                    html.Div([       # Div para as tabs
-                        dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
-                            dcc.Tab(children=[                              # Data-Table
-                                dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0,6)], style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
-                            ], label='Data Table', value='tab-1'),
-                            dcc.Tab(children=[
-                                dash_table.DataTable(id='Freq Table', columns=[{'name':'Mínimo', 'id':'Mínimo'}, {'name':'Máximo', 'id':'Máximo'}, {'name':'Mínimo (log)', 'id':'Mínimo (log)'}, {'name':'Frequência Absoluta', 'id':'Frequência Absoluta'}, {'name':'Frequência Relativa (%)', 'id':'Frequência Relativa (%)'}, {'name':'Frequência Acumulada', 'id':'Frequência Acumulada'}, {'name':'Frequência Acumulada Direta (%)', 'id':'Frequência Acumulada Direta (%)'}, {'name':'Frequência Acumulada Invertida (%)', 'id':'Frequência Acumulada Invertida (%)'}], style_table={'overflowX':'scroll', 'overflowY':'scroll', 'height':'250px'})
-                            ], label='Frequencies Table', value='tab-2')      # Frequency Table
-                        ])])
-                ], className='three columns', style={'border-style':'solid','margin': '10px', 'border-width':'thin', 'padding':'5px', 'border-radius':'8px', 'height':'auto'})]),
+                    html.H5('2. Load your Litology Shapefile:', style={'textAlign': 'center', 'color': '#054b66'}),
+
+                    html.Div(dcc.Upload(
+                        id='upload-shapes',
+                        children=html.Div([
+                            'Drag and Drop or ',
+                            html.A('Select Files')
+                        ]),
+                        style={
+                            'width': '100%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'margin-top':'10px',
+                            'margin-bottom':'10px'
+                        },
+                        # Allow multiple files to be uploaded
+                        multiple=True
+                    )),
+
+                    html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic'})
+
+                ], className='row')
+
+                ], className='three columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})]),
 
         html.Div([  # Classe Caixa
             html.Div([  # classe 7 colunas
-                html.H3(children='2. Number of Clusters by Elbow Method:',
+                html.H5(children='2. Number of Clusters by Elbow Method:',
                         style={'textAlign': 'center', 'color': '#054b66'}),
 
                 dcc.Graph(
                     id='cluster-graph', figure=init_fig
                 )
             ], className='four columns',
-                style={'border-style': 'solid', 'border-width': 'thin', 'margin': '10px', 'border-radius': '8px',
-                       'height': '550px'})]),
+                style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})]),
 
         html.Div([   # Classe Caixa
             html.Div([   # classe 7 colunas
-                html.H3(children='3. Visualize Log-Probability curve:', style={'textAlign': 'center', 'color': '#054b66'}),
+                html.H5(children='3. Visualize Log-Probability curve:', style={'textAlign': 'center', 'color': '#054b66'}),
 
                 dcc.Graph(
                     id='prob-graph', figure=init_fig
                 )
-            ], className='five columns', style={'border-style':'solid','border-width':'thin', 'margin': '10px', 'border-radius':'8px', 'height':'550px'})])
+            ], className='five columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})])
 
     ], className='row'),
 
     html.Div([
         html.Div([
             dcc.Graph(id='map', figure=map_init_fig)
-        ], className='six columns', style={'border-style':'solid','border-width':'thin', 'margin': '10px', 'border-radius':'8px'}
-    )], className='row')
+        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
-])
+        html.Div([
+            html.Div([  # Div para as tabs
+                dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
+                    dcc.Tab(children=[  # Data-Table
+                        dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
+                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
+                                                          'height': '400px'})
+                    ], label='Data Table', value='tab-1'),
+                    dcc.Tab(children=[
+                        dash_table.DataTable(id='Freq Table', columns=[{'name': 'Mínimo', 'id': 'Mínimo'},
+                                                                       {'name': 'Máximo', 'id': 'Máximo'},
+                                                                       {'name': 'Mínimo (log)', 'id': 'Mínimo (log)'},
+                                                                       {'name': 'Frequência Absoluta',
+                                                                        'id': 'Frequência Absoluta'},
+                                                                       {'name': 'Frequência Relativa (%)',
+                                                                        'id': 'Frequência Relativa (%)'},
+                                                                       {'name': 'Frequência Acumulada',
+                                                                        'id': 'Frequência Acumulada'},
+                                                                       {'name': 'Frequência Acumulada Direta (%)',
+                                                                        'id': 'Frequência Acumulada Direta (%)'},
+                                                                       {'name': 'Frequência Acumulada Invertida (%)',
+                                                                        'id': 'Frequência Acumulada Invertida (%)'}],
+                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
+                                                          'height': '400px'})
+                    ], label='Frequencies Table', value='tab-2')  # Frequency Table
+                ])])
+        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
+    ], className='row'),
+
+], style={'background-color':'#f2f2f2', 'padding':'5%'})
 
 @app.callback(
     [Output('prob-graph', 'figure'),
