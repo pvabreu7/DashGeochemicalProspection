@@ -172,7 +172,7 @@ app.layout = html.Div(children=[
         ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
 
-], style={'background-color':'#f2f2f2', 'padding':'5%'})
+], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
 
 @app.callback(
     [Output('prob-graph', 'figure'),
@@ -287,19 +287,24 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column):
                                         mapbox_style="carto-positron", zoom=4)
     map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
     if lon == None or lat == None:
-
+        print('1')
         return map_init_fig
 
     if element_column == None:
+        print('2')
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
         map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
         return map_init_fig
     else:
+
         df = pd.DataFrame.from_dict(cluster_dict, 'columns')
-        map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
-        map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+        classes_list = list(df.Class.unique())
+        classes_list.sort(reverse=True)
+        for cluster in classes_list:
+            map_init_fig.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster], name=cluster)
+        map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h", paper_bgcolor='#f9f9f9')
 
         return map_init_fig
 
