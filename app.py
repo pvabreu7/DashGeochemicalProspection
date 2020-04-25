@@ -162,7 +162,12 @@ app.layout = html.Div(children=[
                                                                         'id': 'Frequência Acumulada Invertida (%)'}],
                                              style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
                                                           'height': '400px'})
-                    ], label='Frequencies Table', value='tab-2')  # Frequency Table
+                    ], label='Frequencies Table', value='tab-2'), # Frequency Table
+                    dcc.Tab(children=[  # Data-Table
+                        dash_table.DataTable(id='Clustered Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
+                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
+                                                          'height': '400px'})
+                    ], label='Clustered Table', value='tab-3')
                 ])])
         ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
@@ -171,12 +176,13 @@ app.layout = html.Div(children=[
 
 @app.callback(
     [Output('prob-graph', 'figure'),
-     Output('cluster-graph', 'figure')],        # A saída é a figura do gráfico
+     Output('cluster-graph', 'figure'),
+     Output('Clustered Table', 'data')],        # A saída é a figura do gráfico
     [Input('select-element', 'value'),
      Input('Data Table', 'data')])             # Entrada: valor da tabela,
 def update_graph(element_column, data_dict):
     if element_column == None:
-        return init_fig, init_fig
+        return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)]
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         x, y = vislogprob.logprob(df[element_column])
@@ -189,8 +195,7 @@ def update_graph(element_column, data_dict):
 
         probgraf_fig = px.scatter(x=df_clustered.Prob[::-1], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
                                   labels={'x':'Probability (%) ', 'y':str(element_column)+''}, title=str(element_column)+' x Cumulative Probability')
-        probgraf_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60})
-        probgraf_fig.update_layout(legend_orientation="h")
+        probgraf_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
         cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
         cluster_fig.update_traces(mode="markers+lines", hovertemplate=None)
@@ -200,10 +205,9 @@ def update_graph(element_column, data_dict):
                                    x1=visualizer.elbow_value_,
                                    y1=np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_),
                                    line=dict(dash='dashdot', color='#EF553B')))
-        cluster_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60})
-        cluster_fig.update_layout(legend_orientation="h")
+        cluster_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
-        return probgraf_fig, cluster_fig
+        return probgraf_fig, cluster_fig, [{"name": '', "id": ''} for i in range(0, 6)]
 
 @app.callback(
     Output('Freq Table', 'data'),                   # A saída são as dados da tabela
