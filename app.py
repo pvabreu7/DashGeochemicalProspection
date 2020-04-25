@@ -277,19 +277,30 @@ def update_output(list_of_contents, list_of_names):
 @app.callback(
     Output('map', 'figure'),
     [Input('Data Table', 'data'),
+    Input('Clustered Table', 'data'),
     Input('select-lon', 'value'),
-    Input('select-lat', 'value')]
+    Input('select-lat', 'value'),
+    Input('select-element', 'value')]
 )
-def update_map(data_dict, lon, lat):
+def update_map(data_dict, cluster_dict, lon, lat, element_column):
     map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5},
                                         mapbox_style="carto-positron", zoom=4)
     map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
     if lon == None or lat == None:
+
         return map_init_fig
-    else:
+
+    if element_column == None:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
         map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+
+        return map_init_fig
+    else:
+        df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+        map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
+        map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+
         return map_init_fig
 
 
