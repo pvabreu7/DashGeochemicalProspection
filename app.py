@@ -177,12 +177,13 @@ app.layout = html.Div(children=[
 @app.callback(
     [Output('prob-graph', 'figure'),
      Output('cluster-graph', 'figure'),
-     Output('Clustered Table', 'data')],        # A saída é a figura do gráfico
+     Output('Clustered Table', 'data'),
+     Output('Clustered Table', 'columns')],        # A saída é a figura do gráfico
     [Input('select-element', 'value'),
      Input('Data Table', 'data')])             # Entrada: valor da tabela,
 def update_graph(element_column, data_dict):
     if element_column == None:
-        return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)]
+        return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)], [{"name": '', "id": ''} for i in range(0,6)]
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         x, y = vislogprob.logprob(df[element_column])
@@ -207,7 +208,11 @@ def update_graph(element_column, data_dict):
                                    line=dict(dash='dashdot', color='#EF553B')))
         cluster_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
-        return probgraf_fig, cluster_fig, [{"name": '', "id": ''} for i in range(0, 6)]
+        merged_df = df.merge(df_clustered, left_on=element_column, right_on='Value')
+        merged_df = merged_df.drop(axis=1, labels='Value')
+        cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
+
+        return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
 
 @app.callback(
     Output('Freq Table', 'data'),                   # A saída são as dados da tabela
