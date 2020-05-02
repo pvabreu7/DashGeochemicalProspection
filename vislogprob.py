@@ -153,5 +153,5 @@ def clustered_df(X, n_clusters):
                 if row == n[0]
                 else row)
             ordem = ordem + 1
-    print(df_clustered.columns)
+
     return df_clustered
