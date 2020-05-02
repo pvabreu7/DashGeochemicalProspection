@@ -10,6 +10,8 @@ from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 import pandas as pd
 import vislogprob
+from shapely import wkt
+import geo
 import numpy as np
 import plotly.express as px
 # Style:
@@ -82,7 +84,7 @@ app.layout = html.Div(children=[
                                  style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
                     ]),
 
-                    html.H5('2. Load your Litology Shapefile:', style={'textAlign': 'center', 'color': '#054b66'}),
+                    html.H5('2. Load your Litology Geojson:', style={'textAlign': 'center', 'color': '#054b66'}),
 
                     html.Div(dcc.Upload(
                         id='upload-shapes',
@@ -104,6 +106,10 @@ app.layout = html.Div(children=[
                         # Allow multiple files to be uploaded
                         multiple=True
                     )),
+
+                    html.H4('2.2 Select Geojson Label:', style={'textAlign': 'center', 'font-size': '20px'}),
+                    dcc.Dropdown(id='select-poly', style={'margin-bottom': '20px'},
+                                 placeholder='Select Polygon Label...'),
 
                     html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic'})
 
@@ -167,7 +173,13 @@ app.layout = html.Div(children=[
                         dash_table.DataTable(id='Clustered Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
                                              style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
                                                           'height': '400px'})
-                    ], label='Clustered Table', value='tab-3')
+                    ], label='Clustered Table', value='tab-3'),
+                    dcc.Tab(children=[  # Data-Table
+                        dash_table.DataTable(id='Geojson Table',
+                                             columns=[{"name": '', "id": ''} for i in range(0, 6)],
+                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
+                                                          'height': '400px'})
+                    ], label='Geojson Data', value='tab-4')
                 ])])
         ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
@@ -247,6 +259,30 @@ def parse_contents(contents, filename):
 
     return columns, data
 
+@app.callback([Output('select-poly', 'options'),
+               Output('select-poly', 'value'),
+               Output('Geojson Table', 'data'),
+               Output('Geojson Table', 'columns')],
+               [Input('upload-shapes', 'contents')],
+               [State('upload-shapes', 'filename')])
+def update_geojson(list_of_contents, list_of_names):
+    if list_of_contents is None:
+        return [{"label": '', "value": ''} for i in range(0,1)], None, [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)]
+    else:
+        children = [
+            geo.parse_geojson(c, n) for c, n in
+            zip(list_of_contents, list_of_names)]
+        columns, data = children[0]
+        values = []
+        for i in columns:
+            if i['name'][0:7] != 'Unnamed' and i['name'][0:7] != 'geometry':
+                values.append(i['name'])
+        markdowns = [{"label": i, "value": i} for i in values]
+        columns = [{"name": i, "id": i} for i in values]
+
+        return markdowns, None, data, columns
+
+
 @app.callback([Output('Data Table', 'data'),
               Output('Data Table', 'columns'),
               Output('select-element', 'options'),
@@ -259,44 +295,64 @@ def parse_contents(contents, filename):
               [State('upload-data', 'filename')])
 def update_output(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,6)], None, [{"label": '', "value": ''} for i in range(0,6)], None, [{"label": '', "value": ''} for i in range(0,6)], None
+        return [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,6)], None
     if list_of_contents is not None:
         children = [
             parse_contents(c, n) for c, n in
             zip(list_of_contents, list_of_names)]
         columns, data = children[0]
+        print(type(data[0]))
         values = []
         for i in columns:
             if i['name'][0:7] != 'Unnamed':
                 values.append(i['name'])
         markdowns = [{"label": i, "value": i} for i in values]
         columns = [{"name": i, "id": i} for i in values]
-
         return data, columns, markdowns, None, markdowns, None, markdowns, None
 
+# Map Callbacks:
 @app.callback(
     Output('map', 'figure'),
     [Input('Data Table', 'data'),
     Input('Clustered Table', 'data'),
     Input('select-lon', 'value'),
     Input('select-lat', 'value'),
-    Input('select-element', 'value')]
+    Input('select-element', 'value'),
+    Input('Geojson Table', 'data'),
+    Input('select-poly', 'value')]
 )
-def update_map(data_dict, cluster_dict, lon, lat, element_column):
+def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_column):
     map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5},
-                                        mapbox_style="carto-positron", zoom=4)
-    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+                                        mapbox_style="carto-positron", zoom=3)
+    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, legend_orientation="h")
+    geodf = pd.DataFrame.from_dict(geo_dict, 'columns')
+
     if lon == None or lat == None:
-        print('1')
-        return map_init_fig
+        print('sem long e sem lat')
+        if geo_column == None:
+            print('sem seleção do geojson')
+            return map_init_fig
+        if geo_column != None:
+            print('selecionou o geojson')
+            geodf['geometry'] = geodf['geometry'].apply(wkt.loads)
+            geojson = geo.add_ids(geodf, list(geodf.index), geo_column)
+            map = px.choropleth_mapbox(geodf, geojson=geojson, color=geo_column,
+                                       locations=list(geodf.index),
+                                       center={"lat": -13.499799951999933, "lon": -48.57199078199994},
+                                       mapbox_style="carto-positron", zoom=9, opacity=0.3)
+            map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, legend_orientation="h")
+            return map
+
+
 
     if element_column == None:
-        print('2')
+        print('sem seleção do elemento')
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
         map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
         return map_init_fig
+
     else:
 
         df = pd.DataFrame.from_dict(cluster_dict, 'columns')
@@ -307,9 +363,6 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column):
         map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h", paper_bgcolor='#f9f9f9')
 
         return map_init_fig
-
-
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte

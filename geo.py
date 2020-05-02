@@ -1,20 +1,18 @@
 import pandas as pd
+import csv
 import geopandas as gpd
 import json
-
+import base64
+import io
 from shapely.geometry import LineString, MultiLineString
 import numpy as np
 import plotly.graph_objs as go
 import plotly.express as px
 
 
-def shapefile_to_geojson(gdf, index_list, labels_col, tolerance=0):
-    # gdf - geopandas dataframe containing the geometry column and values to be mapped to a colorscale
-    # index_list - a sublist of list(gdf.index)  or gdf.index  for all data
-    # tolerance - float parameter to set the Polygon/MultiPolygon degree of simplification
-    # returns a geojson type dict
+def add_ids(gdf, index_list, labels_col, tolerance=0):
 
-    geo_names = list(gdf[str(labels_col)])  # Desnecessário, substituir
+    geo_names = list(gdf[str(labels_col)])
     geojson = {'type': 'FeatureCollection', 'features': []}
     for index in index_list:
         geo = gdf['geometry'][index].simplify(tolerance)
@@ -43,5 +41,21 @@ def shapefile_to_geojson(gdf, index_list, labels_col, tolerance=0):
         geojson['features'].append(feature)
     return geojson
 
+def parse_geojson(contents, filename):
+    try:
+        if 'geojson' in filename:
+            content_type, content_string = contents.split(',')
+            decoded = base64.b64decode(content_string)
+            geojson = decoded.decode("ISO-8859-1")
+            geodf = gpd.read_file(geojson)
+            geodf['geometry'] = geodf['geometry'].astype(str)
 
+    except Exception as e:
+        print(e)
+        return print('There was an error processing this file.')
+
+    data = geodf.to_dict('records')
+    columns = [{'name': i, 'id': i} for i in geodf.columns]
+
+    return columns, data
 
