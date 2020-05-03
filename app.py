@@ -139,18 +139,17 @@ app.layout = html.Div(children=[
 
     ], className='row'),
 
-    html.Div([
+    html.Div([            # Row div
         html.Div([
             dcc.Graph(id='map', figure=map_init_fig, style={'height':'600px'})
-        ], className='seven columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
+        ], className='seven columns', style={'height':'620px', 'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
         html.Div([
             html.Div([  # Div para as tabs
                 dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
                     dcc.Tab(children=[  # Data-Table
                         dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
-                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
+                                             style_table={'height':'500px', 'overflowX': 'scroll', 'overflowY': 'scroll'})
                     ], label='Data Table', value='tab-1'),
                     dcc.Tab(children=[
                         dash_table.DataTable(id='Freq Table', columns=[{'name': 'Mínimo', 'id': 'Mínimo'},
@@ -181,8 +180,18 @@ app.layout = html.Div(children=[
                                                           'height': '400px'})
                     ], label='Geojson Data', value='tab-4')
                 ])])
-        ], className='five columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
+        ], className='five columns', style={'height':'620px','border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
+
+    html.Div([
+        html.Div([
+            dcc.Graph(id='dist-plot', figure=init_fig)
+        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
+
+        html.Div([
+            dcc.Graph(id='box-plot', figure=init_fig)
+        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
+    ], className='row')
 
 ], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
 
@@ -295,7 +304,7 @@ def update_geojson(list_of_contents, list_of_names):
               [State('upload-data', 'filename')])
 def update_output(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,6)], None
+        return [{"name": '', "id": ''} for i in range(0,15)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,6)], None
     if list_of_contents is not None:
         children = [
             parse_contents(c, n) for c, n in
