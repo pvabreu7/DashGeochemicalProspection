@@ -141,8 +141,8 @@ app.layout = html.Div(children=[
 
     html.Div([
         html.Div([
-            dcc.Graph(id='map', figure=map_init_fig)
-        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
+            dcc.Graph(id='map', figure=map_init_fig, style={'height':'600px'})
+        ], className='seven columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
         html.Div([
             html.Div([  # Div para as tabs
@@ -181,7 +181,7 @@ app.layout = html.Div(children=[
                                                           'height': '400px'})
                     ], label='Geojson Data', value='tab-4')
                 ])])
-        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
+        ], className='five columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
 
 ], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
@@ -324,7 +324,7 @@ def update_output(list_of_contents, list_of_names):
 def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_column):
     map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5},
                                         mapbox_style="carto-positron", zoom=3)
-    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, legend_orientation="h")
+    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
     geodf = pd.DataFrame.from_dict(geo_dict, 'columns')
 
     if lon == None or lat == None:
@@ -340,28 +340,60 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
                                        locations=list(geodf.index),
                                        center={"lat": -13.499799951999933, "lon": -48.57199078199994},
                                        mapbox_style="carto-positron", zoom=9, opacity=0.3)
-            map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, legend_orientation="h")
+            map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
             return map
 
+    if lon != None and lat != None:
+        print('tem lat e long')
+        if geo_column == None:    # Mapa com pontos e sem polígonos
+            if element_column == None:        # Retorna Mapa de pontos sem cluster
+                print('sem seleção do elemento')
+                df = pd.DataFrame.from_dict(data_dict, 'columns')
+                map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
+                map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
+                return map_init_fig
+            if element_column != None:        # Retorna Mapa de pontos com cluster
+                df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+                classes_list = list(df.Class.unique())
+                classes_list.sort(reverse=True)
+                for cluster in classes_list:
+                    map_init_fig.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster],
+                                                   name=cluster)
+                map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h",
+                                           paper_bgcolor='#f9f9f9')
 
-    if element_column == None:
-        print('sem seleção do elemento')
-        df = pd.DataFrame.from_dict(data_dict, 'columns')
-        map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
-        map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+                return map_init_fig
+        if geo_column != None:      # Se tiverem polígonos selecionados
+            if element_column == None:       # Sem clusters
+                geodf['geometry'] = geodf['geometry'].apply(wkt.loads)
+                geojson = geo.add_ids(geodf, list(geodf.index), geo_column)
+                map = px.choropleth_mapbox(geodf, geojson=geojson, color=geo_column,
+                                           locations=list(geodf.index),
+                                           center={"lat": -13.499799951999933, "lon": -48.57199078199994},
+                                           mapbox_style="carto-positron", zoom=9, opacity=0.3)
+                df = pd.DataFrame.from_dict(data_dict, 'columns')
+                map.add_scattermapbox(lat=df[lat], lon=df[lon])
+                map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+                return map
 
-        return map_init_fig
+            if element_column != None:       # Com clusters
+                geodf['geometry'] = geodf['geometry'].apply(wkt.loads)
+                geojson = geo.add_ids(geodf, list(geodf.index), geo_column)
+                map = px.choropleth_mapbox(geodf, geojson=geojson, color=geo_column,
+                                           locations=list(geodf.index),
+                                           center={"lat": -13.499799951999933, "lon": -48.57199078199994},
+                                           mapbox_style="carto-positron", zoom=9, opacity=0.3)
+                df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+                classes_list = list(df.Class.unique())
+                classes_list.sort(reverse=True)
+                for cluster in classes_list:
+                    map.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster],
+                                                   name=cluster)
+                map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+                return map
 
     else:
-
-        df = pd.DataFrame.from_dict(cluster_dict, 'columns')
-        classes_list = list(df.Class.unique())
-        classes_list.sort(reverse=True)
-        for cluster in classes_list:
-            map_init_fig.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster], name=cluster)
-        map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h", paper_bgcolor='#f9f9f9')
-
         return map_init_fig
 
 if __name__ == '__main__':
