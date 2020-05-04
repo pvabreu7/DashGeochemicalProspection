@@ -189,11 +189,33 @@ app.layout = html.Div(children=[
         ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
         html.Div([
-            dcc.Graph(id='box-plot', figure=init_fig)
-        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
+            dcc.Graph(id='bar-plot', figure=init_fig)
+        ], className='six columns', style={'border-radius': '5px', 'background-color': '#f9f9f9', 'margin': '10px', 'padding': '15px', 'position': 'relative', 'box-shadow': '6px 6px 2px lightgrey'})
     ], className='row')
 
 ], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
+
+@app.callback(
+    [Output('dist-plot', 'figure'),
+     Output('bar-plot', 'figure')],
+    [Input('select-element', 'value'),
+     Input('Clustered Table', 'data')]
+)
+def update_dists(element_column, cluster_dict):
+    if element_column == None:
+        return init_fig, init_fig
+    if element_column != None:
+        try:
+            df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+            dist = px.histogram(df, element_column, marginal='box', title=element_column+' Distribution')
+            bar = px.bar(df, y='Class')
+            bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
+            dist.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
+            return dist, bar
+        except ValueError:
+            return init_fig, init_fig
+    else:
+        return init_fig, init_fig
 
 @app.callback(
     [Output('prob-graph', 'figure'),
