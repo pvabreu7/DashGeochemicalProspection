@@ -1,14 +1,8 @@
 import pandas as pd
-import csv
 import geopandas as gpd
-import json
 import base64
-import io
-from shapely.geometry import LineString, MultiLineString
+from shapely.geometry import LineString, MultiLineString, Point
 import numpy as np
-import plotly.graph_objs as go
-import plotly.express as px
-
 
 def add_ids(gdf, index_list, labels_col, tolerance=0):
 
@@ -58,4 +52,16 @@ def parse_geojson(contents, filename):
     columns = [{'name': i, 'id': i} for i in geodf.columns]
 
     return columns, data
+
+def spatial_join(cluster_df, lon, lat, geojson_df):
+    cluster_df['geometry'] = [Point(x, y) for x, y in zip(cluster_df[lon], cluster_df[lat])]
+
+    points_geo = gpd.GeoDataFrame(cluster_df, geometry='geometry')
+    geojson_geo = gpd.GeoDataFrame(geojson_df, geometry='geometry')
+
+    spjoin = gpd.sjoin(points_geo, geojson_geo)
+
+    return spjoin
+
+
 

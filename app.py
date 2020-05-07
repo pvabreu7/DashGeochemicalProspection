@@ -121,7 +121,6 @@ app.layout = html.Div(children=[
             html.Div([  # classe 7 colunas
                 html.H5(children='2. Number of Clusters by Elbow Method:',
                         style={'textAlign': 'center', 'color': '#054b66'}),
-
                 dcc.Graph(
                     id='cluster-graph', figure=init_fig
                 )
@@ -185,37 +184,104 @@ app.layout = html.Div(children=[
 
     html.Div([
         html.Div([
+            html.H5(children='Distribution Plot:',
+                    style={'textAlign': 'center', 'color': '#054b66'}),
+
+            html.Div([
+                html.Div(['Select Longitude (x)...'],
+                         style={'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block'}),
+
+                html.Div([dcc.Dropdown(id='select-classes', placeholder='Select Class...', value= 'All samples')],
+                         style={'margin-bottom': '10px', 'width': '48%', 'float': 'right', 'display': 'inline-block'})
+            ]),
+
             dcc.Graph(id='dist-plot', figure=init_fig)
         ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
         html.Div([
+            html.H5(children='Spatial Join Plot:',
+                    style={'textAlign': 'center', 'color': '#054b66'}),
+
             dcc.Graph(id='bar-plot', figure=init_fig)
         ], className='six columns', style={'border-radius': '5px', 'background-color': '#f9f9f9', 'margin': '10px', 'padding': '15px', 'position': 'relative', 'box-shadow': '6px 6px 2px lightgrey'})
     ], className='row')
 
 ], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
 
-@app.callback(
+@app.callback(                                     # Distribution Callback
     [Output('dist-plot', 'figure'),
-     Output('bar-plot', 'figure')],
+     Output('select-classes', 'options')],
     [Input('select-element', 'value'),
-     Input('Clustered Table', 'data')]
+     Input('Clustered Table', 'data'),
+     Input('select-classes', 'value')]
 )
-def update_dists(element_column, cluster_dict):
+def update_dists(element_column, cluster_dict, selected_plot):
     if element_column == None:
-        return init_fig, init_fig
+        return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
     if element_column != None:
         try:
             df = pd.DataFrame.from_dict(cluster_dict, 'columns')
-            dist = px.histogram(df, element_column, marginal='box', title=element_column+' Distribution')
-            bar = px.bar(df, y='Class')
-            bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
-            dist.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
-            return dist, bar
+            markdowns = [{"label": i, "value": i} for i in df.Class.unique()]
+            markdowns.append({"label": 'All samples', "value": 'All samples'})
+
+            if selected_plot == 'All samples':
+                dist = px.histogram(df, element_column, marginal='box', title=element_column+' Distribution')
+                dist.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
+
+            else:
+                dist = px.histogram(df, df[element_column][df.Class == selected_plot], marginal='box', title=element_column+' '+selected_plot+' Distribution')
+                dist.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
+
+            return dist, markdowns
         except ValueError:
-            return init_fig, init_fig
+            return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
+        except AttributeError:
+            return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
     else:
-        return init_fig, init_fig
+        return init_fig, init_fig, [{"label": '', "value": ''} for i in range(0,1)]
+
+@app.callback(
+    Output('bar-plot', 'figure'),
+    [Input('select-element', 'value'),
+     Input('Clustered Table', 'data'),
+     Input('Geojson Table', 'data'),
+     Input('select-lon', 'value'),
+     Input('select-lat', 'value'),
+     Input('select-poly', 'value')]
+)
+def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, polygon_label):
+    if select_element == None or geojson_dict == None or polygon_label == None or lon == None or lat == None:
+        return init_fig
+    else:
+        try:
+            cluster_df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+            geojson_df = pd.DataFrame.from_dict(geojson_dict, 'columns')
+
+            geojson_df['geometry'] = geojson_df['geometry'].apply(wkt.loads)
+
+            joined = geo.spatial_join(cluster_df, lon, lat, geojson_df)
+            counts = []
+            for i in joined[polygon_label][joined.Class == 'Anomalous Sample'].unique():
+                count = round(len(joined[joined[polygon_label] == i][joined.Class == 'Anomalous Sample'])/len(joined[joined.Class == 'Anomalous Sample']), ndigits=3)
+                counts.append(count)
+            print(counts)
+            print(joined[polygon_label][joined.Class == 'Anomalous Sample'].unique())
+            bar = px.bar(y=joined[polygon_label][joined.Class == 'Anomalous Sample'].unique(), x=counts, orientation='h')
+
+            return bar
+
+        except ValueError as e:
+            print('deu value error')
+            print(e)
+            return init_fig
+        except AttributeError as e:
+            print('deu attribute error')
+            print(e)
+            return init_fig
+        except KeyError as e:
+            print('deu key error')
+            print(e)
+            return init_fig
 
 @app.callback(
     [Output('prob-graph', 'figure'),
@@ -223,7 +289,7 @@ def update_dists(element_column, cluster_dict):
      Output('Clustered Table', 'data'),
      Output('Clustered Table', 'columns')],        # A saída é a figura do gráfico
     [Input('select-element', 'value'),
-     Input('Data Table', 'data')])             # Entrada: valor da tabela,
+     Input('Data Table', 'data')])                 # Entrada: valor da tabela,
 def update_graph(element_column, data_dict):
     if element_column == None:
         return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)], [{"name": '', "id": ''} for i in range(0,6)]
@@ -332,7 +398,6 @@ def update_output(list_of_contents, list_of_names):
             parse_contents(c, n) for c, n in
             zip(list_of_contents, list_of_names)]
         columns, data = children[0]
-        print(type(data[0]))
         values = []
         for i in columns:
             if i['name'][0:7] != 'Unnamed':
@@ -359,12 +424,9 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
     geodf = pd.DataFrame.from_dict(geo_dict, 'columns')
 
     if lon == None or lat == None:
-        print('sem long e sem lat')
         if geo_column == None:
-            print('sem seleção do geojson')
             return map_init_fig
         if geo_column != None:
-            print('selecionou o geojson')
             geodf['geometry'] = geodf['geometry'].apply(wkt.loads)
             geojson = geo.add_ids(geodf, list(geodf.index), geo_column)
             map = px.choropleth_mapbox(geodf, geojson=geojson, color=geo_column,
@@ -375,25 +437,26 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
             return map
 
     if lon != None and lat != None:
-        print('tem lat e long')
         if geo_column == None:    # Mapa com pontos e sem polígonos
-            if element_column == None:        # Retorna Mapa de pontos sem cluster
-                print('sem seleção do elemento')
-                df = pd.DataFrame.from_dict(data_dict, 'columns')
-                map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
-                map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+            try:
+                if element_column == None:        # Retorna Mapa de pontos sem cluster
+                    df = pd.DataFrame.from_dict(data_dict, 'columns')
+                    map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
+                    map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
-                return map_init_fig
-            if element_column != None:        # Retorna Mapa de pontos com cluster
-                df = pd.DataFrame.from_dict(cluster_dict, 'columns')
-                classes_list = list(df.Class.unique())
-                classes_list.sort(reverse=True)
-                for cluster in classes_list:
-                    map_init_fig.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster],
-                                                   name=cluster)
-                map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h",
-                                           paper_bgcolor='#f9f9f9')
+                    return map_init_fig
+                if element_column != None:        # Retorna Mapa de pontos com cluster
+                    df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+                    classes_list = list(df.Class.unique())
+                    classes_list.sort(reverse=True)
+                    for cluster in classes_list:
+                        map_init_fig.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster],
+                                                       name=cluster)
+                    map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h",
+                                               paper_bgcolor='#f9f9f9')
 
+                    return map_init_fig
+            except AttributeError:
                 return map_init_fig
         if geo_column != None:      # Se tiverem polígonos selecionados
             if element_column == None:       # Sem clusters
