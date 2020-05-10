@@ -14,6 +14,11 @@ from shapely import wkt
 import geo
 import numpy as np
 import plotly.express as px
+import urllib
+from flask import send_file
+import flask
+
+
 # Style:
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -148,7 +153,7 @@ app.layout = html.Div(children=[
                 dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
                     dcc.Tab(children=[  # Data-Table
                         dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
-                                             style_table={'height':'500px', 'overflowX': 'scroll', 'overflowY': 'scroll'})
+                                             style_table={'height':'400px', 'overflowX': 'scroll', 'overflowY': 'scroll'})
                     ], label='Data Table', value='tab-1'),
                     dcc.Tab(children=[
                         dash_table.DataTable(id='Freq Table', columns=[{'name': 'Mínimo', 'id': 'Mínimo'},
@@ -178,7 +183,16 @@ app.layout = html.Div(children=[
                                              style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
                                                           'height': '400px'})
                     ], label='Geojson Data', value='tab-4')
-                ])])
+                ]),
+                html.Div([
+                    html.Div([dcc.Dropdown(id='select-download', placeholder='Select Table for Download...', value='All samples', options=[{'label':'Frequency Table', 'value':'freq-table'}, {'label':'Clustered Table', 'value':'cluster-table'}])],
+                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'float': 'left', 'display': 'inline-block'}),
+                    html.A(['Download Table as csv'], id='download-link',
+                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'float': 'right'}, className='button', download="rawdata.csv", href="", target="_blank")
+                ]),
+
+            ]),
+            html.P(['Frequency Table is calculated by Freedman–Diaconis Law for determining classes intervals.'], style={'font-style':'italic'})
         ], className='five columns', style={'height':'620px','border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
 
@@ -202,11 +216,42 @@ app.layout = html.Div(children=[
             html.H5(children='Spatial Join Plot:',
                     style={'textAlign': 'center', 'color': '#054b66'}),
 
+            html.Div([
+                html.Div(['Select Longitude (x)...'],
+                         style={'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block'}),
+
+                html.Div([dcc.Dropdown(id='select-join-classes', placeholder='Select Class...', value='Anomalous samples')],
+                         style={'margin-bottom': '10px', 'width': '48%', 'float': 'right', 'display': 'inline-block'})
+            ]),
+
             dcc.Graph(id='bar-plot', figure=init_fig)
         ], className='six columns', style={'border-radius': '5px', 'background-color': '#f9f9f9', 'margin': '10px', 'padding': '15px', 'position': 'relative', 'box-shadow': '6px 6px 2px lightgrey'})
     ], className='row')
 
 ], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
+
+
+@app.callback(
+    Output('download-link', 'href'),
+    [Input('select-download', 'value'),
+     Input('Freq Table', 'data'),
+     Input('Clustered Table', 'data')])
+def update_download_link(selected_table, cluster_dict, freq_dict):
+    if selected_table == None:
+        return None
+    if selected_table == 'freq-table':
+        df = pd.DataFrame.from_dict(freq_dict, 'columns')
+        csv_string = df.to_csv(index=False, encoding='ISO-8859-1')
+        csv_string = "data:text/csv;charset=ISO-8859-1," + urllib.parse.quote(csv_string)
+
+        return csv_string
+    if selected_table == 'cluster-table':
+        df = pd.DataFrame.from_dict(cluster_dict, 'columns')
+        csv_string = df.to_csv(index=False, encoding='ISO-8859-1')
+        csv_string = "data:text/csv;charset=ISO-8859-1," + urllib.parse.quote(csv_string)
+
+        return csv_string
+
 
 @app.callback(                                     # Distribution Callback
     [Output('dist-plot', 'figure'),
@@ -241,47 +286,53 @@ def update_dists(element_column, cluster_dict, selected_plot):
         return init_fig, init_fig, [{"label": '', "value": ''} for i in range(0,1)]
 
 @app.callback(
-    Output('bar-plot', 'figure'),
+    [Output('bar-plot', 'figure'),
+    Output('select-join-classes', 'options')],
     [Input('select-element', 'value'),
      Input('Clustered Table', 'data'),
      Input('Geojson Table', 'data'),
      Input('select-lon', 'value'),
      Input('select-lat', 'value'),
-     Input('select-poly', 'value')]
+     Input('select-poly', 'value'),
+     Input('select-join-classes', 'value')]
 )
-def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, polygon_label):
+def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, polygon_label, select_class):
     if select_element == None or geojson_dict == None or polygon_label == None or lon == None or lat == None:
-        return init_fig
+        return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
     else:
         try:
             cluster_df = pd.DataFrame.from_dict(cluster_dict, 'columns')
             geojson_df = pd.DataFrame.from_dict(geojson_dict, 'columns')
 
+            markdowns = [{"label": i, "value": i} for i in cluster_df.Class.unique()]
+            markdowns.append({"label": 'All samples', "value": 'All samples'})
+
             geojson_df['geometry'] = geojson_df['geometry'].apply(wkt.loads)
 
             joined = geo.spatial_join(cluster_df, lon, lat, geojson_df)
             counts = []
-            for i in joined[polygon_label][joined.Class == 'Anomalous Sample'].unique():
-                count = round(len(joined[joined[polygon_label] == i][joined.Class == 'Anomalous Sample'])/len(joined[joined.Class == 'Anomalous Sample']), ndigits=3)
+            for i in joined[polygon_label][joined.Class == select_class].unique():
+                count = round(len(joined[joined[polygon_label] == i][joined.Class == select_class])/len(joined[joined.Class == select_class]), ndigits=3)
                 counts.append(count)
             print(counts)
-            print(joined[polygon_label][joined.Class == 'Anomalous Sample'].unique())
-            bar = px.bar(y=joined[polygon_label][joined.Class == 'Anomalous Sample'].unique(), x=counts, orientation='h')
+            print(joined[polygon_label][joined.Class == select_class].unique())
+            bar = px.bar(y=joined[polygon_label][joined.Class == select_class].unique(), x=counts, orientation='h')
+            bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
 
-            return bar
+            return bar, markdowns
 
         except ValueError as e:
             print('deu value error')
             print(e)
-            return init_fig
+            return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
         except AttributeError as e:
             print('deu attribute error')
             print(e)
-            return init_fig
+            return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
         except KeyError as e:
             print('deu key error')
             print(e)
-            return init_fig
+            return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
 
 @app.callback(
     [Output('prob-graph', 'figure'),
@@ -420,7 +471,7 @@ def update_output(list_of_contents, list_of_names):
 def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_column):
     map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5},
                                         mapbox_style="carto-positron", zoom=3)
-    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+    map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, paper_bgcolor='#f9f9f9')
     geodf = pd.DataFrame.from_dict(geo_dict, 'columns')
 
     if lon == None or lat == None:
@@ -433,7 +484,7 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
                                        locations=list(geodf.index),
                                        center={"lat": -13.499799951999933, "lon": -48.57199078199994},
                                        mapbox_style="carto-positron", zoom=9, opacity=0.3)
-            map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+            map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, paper_bgcolor='#f9f9f9')
             return map
 
     if lon != None and lat != None:
@@ -442,7 +493,7 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
                 if element_column == None:        # Retorna Mapa de pontos sem cluster
                     df = pd.DataFrame.from_dict(data_dict, 'columns')
                     map_init_fig.add_scattermapbox(lat=df[lat], lon=df[lon])
-                    map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+                    map_init_fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, paper_bgcolor='#f9f9f9')
 
                     return map_init_fig
                 if element_column != None:        # Retorna Mapa de pontos com cluster
@@ -468,7 +519,7 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
                                            mapbox_style="carto-positron", zoom=9, opacity=0.3)
                 df = pd.DataFrame.from_dict(data_dict, 'columns')
                 map.add_scattermapbox(lat=df[lat], lon=df[lon])
-                map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+                map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, paper_bgcolor='#f9f9f9')
                 return map
 
             if element_column != None:       # Com clusters
@@ -484,7 +535,7 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
                 for cluster in classes_list:
                     map.add_scattermapbox(lat=df[lat][df.Class == cluster], lon=df[lon][df.Class == cluster],
                                                    name=cluster)
-                map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10})
+                map.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, paper_bgcolor='#f9f9f9')
                 return map
 
     else:
