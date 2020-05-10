@@ -77,15 +77,8 @@ app.layout = html.Div(children=[
                     )),
 
                     html.P(children='1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'14px'}),
-                    dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'}, placeholder='Select Geochemical Element...'),
 
-                    #html.Div([
-                    #    html.Div([dcc.Dropdown(id='select-lon', placeholder='Select Longitude (x)...')],
-                    #             style={'margin-bottom':'10px', 'width':'48%', 'display': 'inline-block'}),
-#
-                    #    html.Div([dcc.Dropdown(id='select-lat', placeholder='Select Latitude (y)...')],
-                    #             style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
-                    #]),
+                    dcc.Dropdown(id='select-element', style={'margin-bottom':'5px'}, placeholder='Select Geochemical Element...'),
 
                     html.P(children='2. Load Geojson:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
 
@@ -110,10 +103,9 @@ app.layout = html.Div(children=[
                         multiple=True
                     )),
 
-                    html.P(children='1.2 Select Geojson Label:', style={'textAlign': 'center', 'font-size':'14px'}),
-                    dcc.Dropdown(id='select-poly', style={'margin-bottom': '20px'},
-                                 placeholder='Select Polygon Label...'),
-
+                    #html.P(children='1.2 Select Geojson Label:', style={'textAlign': 'center', 'font-size':'14px'}),
+                    #dcc.Dropdown(id='select-poly', placeholder='Select Polygon Label...'),
+#
                     html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic', 'font-size':'12px'})
 
                 ], className='row')
@@ -122,8 +114,7 @@ app.layout = html.Div(children=[
 
         html.Div([  # Classe Caixa
             html.Div([  # classe 7 colunas
-                html.H5(children='2. Number of Clusters by Elbow Method:',
-                        style={'textAlign': 'center', 'color': '#054b66'}),
+                html.P(children='2. Nº of Clusters by Elbow Method:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
                 dcc.Graph(
                     id='cluster-graph', figure=init_fig
                 )
@@ -132,7 +123,7 @@ app.layout = html.Div(children=[
 
         html.Div([   # Classe Caixa
             html.Div([   # classe 7 colunas
-                html.H5(children='3. Visualize Log-Probability curve:', style={'textAlign': 'center', 'color': '#054b66'}),
+                html.P(children='3. Visualize Log-probability curve:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
 
                 dcc.Graph(
                     id='prob-graph', figure=init_fig
@@ -160,12 +151,12 @@ app.layout = html.Div(children=[
                                 html.Div(
                                     [
                                         dcc.Dropdown(id='select-lon', placeholder='Longitude (x)...'),
-                                    ], style = {'margin-bottom': '10px', 'width': '25%', 'display': 'inline-block', 'margin-right':'5px'}
+                                    ], style = {'width': '23.4%', 'display': 'inline-block', 'margin-right':'5px', 'float':'left'}
                                 ),
                                 html.Div(
                                     [
                                         dcc.Dropdown(id='select-lat', placeholder='Latitude (y)...')
-                                    ], style = {'margin-bottom': '10px', 'width': '24%', 'float': 'right', 'display': 'inline-block'}
+                                    ], style = {'width': '25%', 'float': 'right', 'display': 'inline-block'}
                                 )
                             ]
                         )
@@ -175,7 +166,34 @@ app.layout = html.Div(children=[
                 ], className='row'
             ),
 
-            dcc.Graph(id='map', figure=map_init_fig, style={'height':'600px'})
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.P(children='Select Geojson Polygon from Data:',
+                                   style={'textAlign': 'center', 'width': '49%', 'font-size': '14px',
+                                          'display': 'inline-block', 'float': 'left', 'line-height': '2.2'})
+                        ]
+                    ),
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [
+                                            dcc.Dropdown(id='select-poly', placeholder='Select Polygon Label...'),
+                                        ], style={'width': '50%', 'display': 'inline-block',
+                                                  'margin-left': '6px'}
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+
+                ], className='row'
+            ),
+
+            dcc.Graph(id='map', figure=map_init_fig, style={'height':'475px'})
         ], className='seven columns', style={'height':'620px', 'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
         html.Div([
