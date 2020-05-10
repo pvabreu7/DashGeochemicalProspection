@@ -49,13 +49,11 @@ app.layout = html.Div(children=[
         id="title", style={'display':'flex', 'margin-bottom':'25px'}
     ),
 
-    html.Hr(), # Linha Divisória -> Começo da aplicação
-
     html.Div([  # classe ROW -> dois containers
         html.Div([  # classe caixa
             html.Div([  # classe 5 colunas
                 html.Div([
-                    html.Div([html.H5(children='1. Load table:', style={'textAlign': 'center', 'color': '#054b66'})]),
+                    html.P(children='1. Load table:', style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
 
                     html.Div(dcc.Upload(
                         id='upload-data',
@@ -78,7 +76,7 @@ app.layout = html.Div(children=[
                         multiple=True
                     )),
 
-                    html.H4('1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'20px'}),
+                    html.P(children='1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'14px'}),
                     dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'}, placeholder='Select Geochemical Element...'),
 
                     html.Div([
@@ -89,7 +87,7 @@ app.layout = html.Div(children=[
                                  style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
                     ]),
 
-                    html.H5('2. Load your Litology Geojson:', style={'textAlign': 'center', 'color': '#054b66'}),
+                    html.P(children='2. Load Geojson:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
 
                     html.Div(dcc.Upload(
                         id='upload-shapes',
@@ -112,11 +110,11 @@ app.layout = html.Div(children=[
                         multiple=True
                     )),
 
-                    html.H4('2.2 Select Geojson Label:', style={'textAlign': 'center', 'font-size': '20px'}),
+                    html.P(children='1.2 Select Geojson Label:', style={'textAlign': 'center', 'font-size':'14px'}),
                     dcc.Dropdown(id='select-poly', style={'margin-bottom': '20px'},
                                  placeholder='Select Polygon Label...'),
 
-                    html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic'})
+                    html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic', 'font-size':'12px'})
 
                 ], className='row')
 
