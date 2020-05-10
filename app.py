@@ -79,13 +79,13 @@ app.layout = html.Div(children=[
                     html.P(children='1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'14px'}),
                     dcc.Dropdown(id='select-element', style={'margin-bottom':'20px'}, placeholder='Select Geochemical Element...'),
 
-                    html.Div([
-                        html.Div([dcc.Dropdown(id='select-lon', placeholder='Select Longitude (x)...')],
-                                 style={'margin-bottom':'10px', 'width':'48%', 'display': 'inline-block'}),
-
-                        html.Div([dcc.Dropdown(id='select-lat', placeholder='Select Latitude (y)...')],
-                                 style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
-                    ]),
+                    #html.Div([
+                    #    html.Div([dcc.Dropdown(id='select-lon', placeholder='Select Longitude (x)...')],
+                    #             style={'margin-bottom':'10px', 'width':'48%', 'display': 'inline-block'}),
+#
+                    #    html.Div([dcc.Dropdown(id='select-lat', placeholder='Select Latitude (y)...')],
+                    #             style={'margin-bottom':'10px', 'width':'48%',  'float': 'right', 'display': 'inline-block'})
+                    #]),
 
                     html.P(children='2. Load Geojson:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
 
@@ -143,6 +143,38 @@ app.layout = html.Div(children=[
 
     html.Div([            # Row div
         html.Div([
+            html.P(children='4. Spatial Overview:', style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
+
+            html.Div(
+                [
+                    html.Div(
+                    [
+                        html.P(children='Select Coordinates Columns from Data:', style={'textAlign': 'center', 'width':'50%','font-size': '14px',
+                                                                                        'display': 'inline-block', 'float':'left', 'line-height':'2.2'})
+                    ]
+                         ),
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.Div(
+                                    [
+                                        dcc.Dropdown(id='select-lon', placeholder='Longitude (x)...'),
+                                    ], style = {'margin-bottom': '10px', 'width': '25%', 'display': 'inline-block', 'margin-right':'5px'}
+                                ),
+                                html.Div(
+                                    [
+                                        dcc.Dropdown(id='select-lat', placeholder='Latitude (y)...')
+                                    ], style = {'margin-bottom': '10px', 'width': '24%', 'float': 'right', 'display': 'inline-block'}
+                                )
+                            ]
+                        )
+                    ]
+                        )
+
+                ], className='row'
+            ),
+
             dcc.Graph(id='map', figure=map_init_fig, style={'height':'600px'})
         ], className='seven columns', style={'height':'620px', 'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
 
