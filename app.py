@@ -21,12 +21,15 @@ import flask
 
 # Style:
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# two columns  = 13.3333333333%
+# four columns = 30.6666666667%
+# five columns = 39.3333333333%
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Empty Graphs
 init_fig = px.scatter(x=[], y=[], title='Load Data First', log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
-init_fig.update_layout(margin={'l': 60, 'b': 40, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
+init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
-map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10})
+map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 
 app.layout = html.Div(children=[
     dcc.Store(id="aggregate_data"),
@@ -103,32 +106,29 @@ app.layout = html.Div(children=[
                         multiple=True
                     )),
 
-                    #html.P(children='1.2 Select Geojson Label:', style={'textAlign': 'center', 'font-size':'14px'}),
-                    #dcc.Dropdown(id='select-poly', placeholder='Select Polygon Label...'),
-#
                     html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic', 'font-size':'12px'})
 
                 ], className='row')
 
-                ], className='three columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})]),
+                ], className='start column', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey', 'width':'20%', 'height':'420.6px'})]),
 
         html.Div([  # Classe Caixa
             html.Div([  # classe 7 colunas
                 html.P(children='2. Nº of Clusters by Elbow Method:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
                 dcc.Graph(
-                    id='cluster-graph', figure=init_fig
+                    id='cluster-graph', figure=init_fig, style={'height':'370px'}
                 )
-            ], className='four columns',
-                style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})]),
+            ], className='elbow column',
+                style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey', 'width':'30%', 'height':'420.6px'})]),
 
         html.Div([   # Classe Caixa
             html.Div([   # classe 7 colunas
                 html.P(children='3. Visualize Log-probability curve:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
 
                 dcc.Graph(
-                    id='prob-graph', figure=init_fig
+                    id='prob-graph', figure=init_fig, style={'height':'370px'}
                 )
-            ], className='five columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})])
+            ], className='logprob column', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey', 'width':'44.5%','height':'420.6px'})])
 
     ], className='row'),
 
@@ -403,8 +403,8 @@ def update_graph(element_column, data_dict):
         df_clustered = vislogprob.clustered_df(X.transpose(), visualizer.elbow_value_)
 
         probgraf_fig = px.scatter(x=df_clustered.Prob[::-1], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
-                                  labels={'x':'Probability (%) ', 'y':str(element_column)+''}, title=str(element_column)+' x Cumulative Probability')
-        probgraf_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', legend_orientation="h")
+                                  labels={'x':'Probability (%) ', 'y':str(element_column)+''})
+        probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
         cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
         cluster_fig.update_traces(mode="markers+lines", hovertemplate=None)
@@ -414,7 +414,7 @@ def update_graph(element_column, data_dict):
                                    x1=visualizer.elbow_value_,
                                    y1=np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_),
                                    line=dict(dash='dashdot', color='#EF553B')))
-        cluster_fig.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', legend_orientation="h")
+        cluster_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
         merged_df = df.merge(df_clustered, left_on=element_column, right_on='Value')
         merged_df = merged_df.drop(axis=1, labels='Value')
