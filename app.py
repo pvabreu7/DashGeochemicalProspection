@@ -26,7 +26,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # five columns = 39.3333333333%
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # Empty Graphs
-init_fig = px.scatter(x=[], y=[], title='Load Data First', log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
+init_fig = px.scatter(x=[], y=[], log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
 init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
 map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
@@ -56,7 +56,7 @@ app.layout = html.Div(children=[
         html.Div([  # classe caixa
             html.Div([  # classe 5 colunas
                 html.Div([
-                    html.P(children='1. Load table:', style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
+                    html.P(children='1. Load .csv data:', style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
 
                     html.Div(dcc.Upload(
                         id='upload-data',
@@ -83,7 +83,7 @@ app.layout = html.Div(children=[
 
                     dcc.Dropdown(id='select-element', style={'margin-bottom':'5px'}, placeholder='Select Geochemical Element...'),
 
-                    html.P(children='2. Load Geojson:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
+                    html.P(children='2. Load Geojson data:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
 
                     html.Div(dcc.Upload(
                         id='upload-shapes',
@@ -123,8 +123,23 @@ app.layout = html.Div(children=[
 
         html.Div([   # Classe Caixa
             html.Div([   # classe 7 colunas
-                html.P(children='3. Visualize Log-probability curve:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.P(children='3. Log-probability curve:',
+                                       style={'textAlign': 'center', 'width': '50%', 'font-size': '16px',  'color': 'rgb(5, 75, 102)',
+                                              'display': 'inline-block', 'float': 'left'})
+                            ]
+                        ),
+                        html.Div(
+                            [
+                                dcc.RadioItems(id='logprob-mode', options=[{'label':'Cluster Mode', 'value':'cluster-mode'}, {'label':'Select Mode', 'value':'select-mode'}], labelStyle={'display': 'inline-block'}, style={'margin-top':'3px'}, value='cluster-mode')
+                            ]
+                        )
 
+                    ], className='row'
+                ),
                 dcc.Graph(
                     id='prob-graph', figure=init_fig, style={'height':'370px'}
                 )
@@ -240,14 +255,14 @@ app.layout = html.Div(children=[
                 ]),
 
             ]),
-            html.P(['Frequency Table is calculated by Freedman–Diaconis Law for determining classes intervals.'], style={'font-style':'italic'})
+            html.P(['Frequency Table is calculated by Freedman–Diaconis Law for determining classes intervals.'], style={'font-style':'italic', 'font-size':'12px'})
         ], className='five columns', style={'height':'620px','border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
     ], className='row'),
 
     html.Div([
         html.Div([
             html.H5(children='Distribution Plot:',
-                    style={'textAlign': 'center', 'color': '#054b66'}),
+                    style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
 
             html.Div([
                 html.Div(['Select Longitude (x)...'],
@@ -262,11 +277,11 @@ app.layout = html.Div(children=[
 
         html.Div([
             html.H5(children='Spatial Join Plot:',
-                    style={'textAlign': 'center', 'color': '#054b66'}),
+                    style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
 
             html.Div([
-                html.Div(['Select Longitude (x)...'],
-                         style={'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block'}),
+                html.Div(['Select Samples Class to Join:'],
+                         style={'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'textAlign':'center'}),
 
                 html.Div([dcc.Dropdown(id='select-join-classes', placeholder='Select Class...', value='Anomalous samples')],
                          style={'margin-bottom': '10px', 'width': '48%', 'float': 'right', 'display': 'inline-block'})
@@ -277,7 +292,6 @@ app.layout = html.Div(children=[
     ], className='row')
 
 ], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
-
 
 @app.callback(
     Output('download-link', 'href'),
@@ -388,10 +402,53 @@ def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, pol
      Output('Clustered Table', 'data'),
      Output('Clustered Table', 'columns')],        # A saída é a figura do gráfico
     [Input('select-element', 'value'),
-     Input('Data Table', 'data')])                 # Entrada: valor da tabela,
-def update_graph(element_column, data_dict):
+     Input('Data Table', 'data'),
+     Input('prob-graph', 'selectedData'),
+     Input('logprob-mode', 'value')])                 # Entrada: valor da tabela,
+def update_graph(element_column, data_dict, selectedData, mode):
     if element_column == None:
         return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)], [{"name": '', "id": ''} for i in range(0,6)]
+
+    if selectedData != None and mode == 'select-mode':
+        df = pd.DataFrame.from_dict(data_dict, 'columns')
+        x, y = vislogprob.logprob(df[element_column])
+
+        X = np.array([x,y])
+        visualizer = KElbowVisualizer(KMeans(), k=(1, 8))
+        visualizer.fit(X.transpose())
+
+        originalData = pd.DataFrame()
+        originalData.insert(0, 'Probability', x)
+        originalData.insert(1, 'Value', y[::-1])
+
+        selected_x = []
+        for point in selectedData['points']:
+            selected_x.append(point['x'])
+
+        max_prob = np.max(selected_x)*0.01
+        originalData['Class'] = originalData.apply(
+            lambda row: 'Anomalous Sample' if row['Probability'] <= max_prob else 'Background Sample', axis=1)
+
+        probgraf_fig = px.scatter(x=originalData.Probability*100, y=originalData.Value, color=originalData.Class, log_y=True, log_x=True,
+                                  labels={'x':'Probability (%) ', 'y':str(element_column)+''})
+        probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
+
+        cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
+        cluster_fig.update_traces(mode="markers+lines", hovertemplate=None)
+        cluster_fig.add_shape(dict(type='line',
+                                   x0=visualizer.elbow_value_,
+                                   y0=-np.mean(visualizer.k_scores_),
+                                   x1=visualizer.elbow_value_,
+                                   y1=np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_),
+                                   line=dict(dash='dashdot', color='#EF553B')))
+        cluster_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
+
+        merged_df = df.merge(originalData, left_on=element_column, right_on='Value')
+        merged_df = merged_df.drop(axis=1, labels='Value')
+        cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
+
+        return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
+
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         x, y = vislogprob.logprob(df[element_column])
@@ -419,20 +476,21 @@ def update_graph(element_column, data_dict):
         merged_df = df.merge(df_clustered, left_on=element_column, right_on='Value')
         merged_df = merged_df.drop(axis=1, labels='Value')
         cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
-
         return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
 
+
 @app.callback(
-    Output('Freq Table', 'data'),                   # A saída são as dados da tabela
+    [Output('Freq Table', 'data'),
+     Output('logprob-mode', 'value')], # A saída são as dados da tabela
     [Input('select-element', 'value'),
      Input('Data Table', 'data')])             # Entrada: valor da tabela
 def update_freq(element_column, data_dict):
     if element_column == None:
-        return [{"name": '', "id": ''} for i in range(0,6)]
+        return [{"name": '', "id": ''} for i in range(0,6)], 'cluster-mode'
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         freq_df = vislogprob.tabela_frequencias(df[element_column])
-        return freq_df.to_dict('records')
+        return freq_df.to_dict('records'), 'cluster-mode'
 
 def parse_contents(contents, filename):
     content_type, content_string = contents.split(',')
