@@ -1,13 +1,11 @@
 import base64
 import io
 import dash
-import dash_table
-import dash_core_components as dcc  # São componentes interativos gerados com js, html e css através do reactjs
 import dash_html_components as html # Possui um componente para cada tag html
 from dash.dependencies import Input, Output, State
 from yellowbrick.cluster import KElbowVisualizer
 from sklearn.cluster import KMeans
-from matplotlib import pyplot as plt
+from layout import dash as dashboard
 import pandas as pd
 import vislogprob
 from shapely import wkt
@@ -15,283 +13,13 @@ import geo
 import numpy as np
 import plotly.express as px
 import urllib
-from flask import send_file
-import flask
 
 
 # Style:
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-# two columns  = 13.3333333333%
-# four columns = 30.6666666667%
-# five columns = 39.3333333333%
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-# Empty Graphs
-init_fig = px.scatter(x=[], y=[], log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
-init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
-map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
-map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 
-app.layout = html.Div(children=[
-    dcc.Store(id="aggregate_data"),
-    # empty Div to trigger javascript file for graph resizing
-    html.Div(id="output-clientside"),
-    html.Div(
-        [
-            html.Div(
-                [
-                    html.H3(
-                        "Geochemical Prospection",
-                        style={"margin-bottom": "0px"},
-                    ),
-                    html.H5(
-                        "Workflow for Geochemical Prospection utilyzing Dash and K-means Clustering", style={"margin-top": "0px"}
-                    ),
-                ]
-            )
-        ],
-        id="title", style={'display':'flex', 'margin-bottom':'25px'}
-    ),
-
-    html.Div([  # classe ROW -> dois containers
-        html.Div([  # classe caixa
-            html.Div([  # classe 5 colunas
-                html.Div([
-                    html.P(children='1. Load .csv data:', style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
-
-                    html.Div(dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag and Drop or ',
-                            html.A('Select Files')
-                        ]),
-                        style={
-                            'width': '100%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin-top':'10px',
-                            'margin-bottom':'10px'
-                        },
-                        # Allow multiple files to be uploaded
-                        multiple=True
-                    )),
-
-                    html.P(children='1.2 Select Geochemical Element:', style={'textAlign': 'center', 'font-size':'14px'}),
-
-                    dcc.Dropdown(id='select-element', style={'margin-bottom':'5px'}, placeholder='Select Geochemical Element...'),
-
-                    html.P(children='2. Load Geojson data:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
-
-                    html.Div(dcc.Upload(
-                        id='upload-shapes',
-                        children=html.Div([
-                            'Drag and Drop or ',
-                            html.A('Select Files')
-                        ]),
-                        style={
-                            'width': '100%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin-top':'10px',
-                            'margin-bottom':'10px'
-                        },
-                        # Allow multiple files to be uploaded
-                        multiple=True
-                    )),
-
-                    html.P(['Obs: all coordinates of both sample data and shapefiles must be geographic'], style={'font-style':'italic', 'font-size':'12px'})
-
-                ], className='row')
-
-                ], className='start column', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey', 'width':'20%', 'height':'420.6px'})]),
-
-        html.Div([  # Classe Caixa
-            html.Div([  # classe 7 colunas
-                html.P(children='2. Nº of Clusters by Elbow Method:', style={'textAlign': 'center', 'font-size':'16px',  'color': 'rgb(5, 75, 102)'}),
-                dcc.Graph(
-                    id='cluster-graph', figure=init_fig, style={'height':'370px'}
-                )
-            ], className='elbow column',
-                style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey', 'width':'30%', 'height':'420.6px'})]),
-
-        html.Div([   # Classe Caixa
-            html.Div([   # classe 7 colunas
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.P(children='3. Log-probability curve:',
-                                       style={'textAlign': 'center', 'width': '50%', 'font-size': '16px',  'color': 'rgb(5, 75, 102)',
-                                              'display': 'inline-block', 'float': 'left'})
-                            ]
-                        ),
-                        html.Div(
-                            [
-                                dcc.RadioItems(id='logprob-mode', options=[{'label':'Cluster Mode', 'value':'cluster-mode'}, {'label':'Select Mode', 'value':'select-mode'}], labelStyle={'display': 'inline-block'}, style={'margin-top':'3px'}, value='cluster-mode')
-                            ]
-                        )
-
-                    ], className='row'
-                ),
-                dcc.Graph(
-                    id='prob-graph', figure=init_fig, style={'height':'370px'}
-                )
-            ], className='logprob column', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey', 'width':'44.5%','height':'420.6px'})])
-
-    ], className='row'),
-
-    html.Div([            # Row div
-        html.Div([
-            html.P(children='4. Spatial Overview:', style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
-
-            html.Div(
-                [
-                    html.Div(
-                    [
-                        html.P(children='Select Coordinates Columns from Data:', style={'textAlign': 'center', 'width':'50%','font-size': '14px',
-                                                                                        'display': 'inline-block', 'float':'left', 'line-height':'2.2'})
-                    ]
-                         ),
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Div(
-                                    [
-                                        dcc.Dropdown(id='select-lon', placeholder='Longitude (x)...'),
-                                    ], style = {'width': '23.4%', 'display': 'inline-block', 'margin-right':'5px', 'float':'left'}
-                                ),
-                                html.Div(
-                                    [
-                                        dcc.Dropdown(id='select-lat', placeholder='Latitude (y)...')
-                                    ], style = {'width': '25%', 'float': 'right', 'display': 'inline-block'}
-                                )
-                            ]
-                        )
-                    ]
-                        )
-
-                ], className='row'
-            ),
-
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            html.P(children='Select Geojson Polygon from Data:',
-                                   style={'textAlign': 'center', 'width': '49%', 'font-size': '14px',
-                                          'display': 'inline-block', 'float': 'left', 'line-height': '2.2'})
-                        ]
-                    ),
-                    html.Div(
-                        [
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [
-                                            dcc.Dropdown(id='select-poly', placeholder='Select Polygon Label...'),
-                                        ], style={'width': '50%', 'display': 'inline-block',
-                                                  'margin-left': '6px'}
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-
-                ], className='row'
-            ),
-
-            dcc.Graph(id='map', figure=map_init_fig, style={'height':'475px'})
-        ], className='seven columns', style={'height':'620px', 'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
-
-        html.Div([
-            html.Div([  # Div para as tabs
-                dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
-                    dcc.Tab(children=[  # Data-Table
-                        dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
-                                             style_table={'height':'400px', 'overflowX': 'scroll', 'overflowY': 'scroll'})
-                    ], label='Data Table', value='tab-1'),
-                    dcc.Tab(children=[
-                        dash_table.DataTable(id='Freq Table', columns=[{'name': 'Mínimo', 'id': 'Mínimo'},
-                                                                       {'name': 'Máximo', 'id': 'Máximo'},
-                                                                       {'name': 'Mínimo (log)', 'id': 'Mínimo (log)'},
-                                                                       {'name': 'Frequência Absoluta',
-                                                                        'id': 'Frequência Absoluta'},
-                                                                       {'name': 'Frequência Relativa (%)',
-                                                                        'id': 'Frequência Relativa (%)'},
-                                                                       {'name': 'Frequência Acumulada',
-                                                                        'id': 'Frequência Acumulada'},
-                                                                       {'name': 'Frequência Acumulada Direta (%)',
-                                                                        'id': 'Frequência Acumulada Direta (%)'},
-                                                                       {'name': 'Frequência Acumulada Invertida (%)',
-                                                                        'id': 'Frequência Acumulada Invertida (%)'}],
-                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
-                    ], label='Frequencies Table', value='tab-2'), # Frequency Table
-                    dcc.Tab(children=[  # Data-Table
-                        dash_table.DataTable(id='Clustered Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
-                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
-                    ], label='Clustered Table', value='tab-3'),
-                    dcc.Tab(children=[  # Data-Table
-                        dash_table.DataTable(id='Geojson Table',
-                                             columns=[{"name": '', "id": ''} for i in range(0, 6)],
-                                             style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
-                    ], label='Geojson Data', value='tab-4')
-                ]),
-                html.Div([
-                    html.Div([dcc.Dropdown(id='select-download', placeholder='Select Table for Download...', value='All samples', options=[{'label':'Frequency Table', 'value':'freq-table'}, {'label':'Clustered Table', 'value':'cluster-table'}])],
-                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'float': 'left', 'display': 'inline-block'}),
-                    html.A(['Download Table as csv'], id='download-link',
-                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'float': 'right'}, className='button', download="rawdata.csv", href="", target="_blank")
-                ]),
-
-            ]),
-            html.P(['Frequency Table is calculated by Freedman–Diaconis Law for determining classes intervals.'], style={'font-style':'italic', 'font-size':'12px'})
-        ], className='five columns', style={'height':'620px','border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'})
-    ], className='row'),
-
-    html.Div([
-        html.Div([
-            html.H5(children='Distribution Plot:',
-                    style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
-
-            html.Div([
-                html.Div(['Select Longitude (x)...'],
-                         style={'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block'}),
-
-                html.Div([dcc.Dropdown(id='select-classes', placeholder='Select Class...', value= 'All samples')],
-                         style={'margin-bottom': '10px', 'width': '48%', 'float': 'right', 'display': 'inline-block'})
-            ]),
-
-            dcc.Graph(id='dist-plot', figure=init_fig)
-        ], className='six columns', style={'border-radius':'5px', 'background-color':'#f9f9f9', 'margin':'10px', 'padding':'15px', 'position':'relative', 'box-shadow':'6px 6px 2px lightgrey'}),
-
-        html.Div([
-            html.H5(children='Spatial Join Plot:',
-                    style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
-
-            html.Div([
-                html.Div(['Select Samples Class to Join:'],
-                         style={'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'textAlign':'center'}),
-
-                html.Div([dcc.Dropdown(id='select-join-classes', placeholder='Select Class...', value='Anomalous samples')],
-                         style={'margin-bottom': '10px', 'width': '48%', 'float': 'right', 'display': 'inline-block'})
-            ]),
-
-            dcc.Graph(id='bar-plot', figure=init_fig)
-        ], className='six columns', style={'border-radius': '5px', 'background-color': '#f9f9f9', 'margin': '10px', 'padding': '15px', 'position': 'relative', 'box-shadow': '6px 6px 2px lightgrey'})
-    ], className='row')
-
-], style={'background-color':'#f2f2f2', 'padding-left':'5%', 'padding-right':'5%', 'padding-bottom':'5%'})
+app.layout = dashboard
 
 @app.callback(
     Output('download-link', 'href'),
@@ -431,7 +159,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
 
         probgraf_fig = px.scatter(x=originalData.Probability*100, y=originalData.Value, color=originalData.Class, log_y=True, log_x=True,
                                   labels={'x':'Probability (%) ', 'y':str(element_column)+''})
-        probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
+        probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h", legend=dict(x=-.1, y=1.2))
 
         cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
         cluster_fig.update_traces(mode="markers+lines", hovertemplate=None)
@@ -461,7 +189,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
 
         probgraf_fig = px.scatter(x=df_clustered.Prob[::-1], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
                                   labels={'x':'Probability (%) ', 'y':str(element_column)+''})
-        probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
+        probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h", legend=dict(x=-.1, y=1.2))
 
         cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
         cluster_fig.update_traces(mode="markers+lines", hovertemplate=None)
