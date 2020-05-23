@@ -11,9 +11,13 @@ import vislogprob
 from shapely import wkt
 import geo
 import numpy as np
-import plotly.express as px
 import urllib
+import plotly.express as px
 
+init_fig = px.scatter(x=[], y=[], log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
+init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
+map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
+map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 
 # Style:
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -21,6 +25,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = dashboard
 
+# Download table Callback
 @app.callback(
     Output('download-link', 'href'),
     [Input('select-download', 'value'),
@@ -42,8 +47,8 @@ def update_download_link(selected_table, cluster_dict, freq_dict):
 
         return csv_string
 
-
-@app.callback(                                     # Distribution Callback
+# Distribution Callback
+@app.callback(
     [Output('dist-plot', 'figure'),
      Output('select-classes', 'options')],
     [Input('select-element', 'value'),
@@ -75,9 +80,10 @@ def update_dists(element_column, cluster_dict, selected_plot):
     else:
         return init_fig, init_fig, [{"label": '', "value": ''} for i in range(0,1)]
 
+# Bar-plot Callback
 @app.callback(
     [Output('bar-plot', 'figure'),
-    Output('select-join-classes', 'options')],
+     Output('select-join-classes', 'options')],
     [Input('select-element', 'value'),
      Input('Clustered Table', 'data'),
      Input('Geojson Table', 'data'),
@@ -100,39 +106,49 @@ def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, pol
             geojson_df['geometry'] = geojson_df['geometry'].apply(wkt.loads)
 
             joined = geo.spatial_join(cluster_df, lon, lat, geojson_df)
+            print(joined.Class.unique())
+            print(joined[polygon_label].unique())
             counts = []
-            for i in joined[polygon_label][joined.Class == select_class].unique():
-                count = round(len(joined[joined[polygon_label] == i][joined.Class == select_class])/len(joined[joined.Class == select_class]), ndigits=3)
-                counts.append(count)
-            print(counts)
-            print(joined[polygon_label][joined.Class == select_class].unique())
-            bar = px.bar(y=joined[polygon_label][joined.Class == select_class].unique(), x=counts, orientation='h')
-            bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9')
+            if select_class == 'All samples':
+                for i in joined[polygon_label].unique():
+                    count = round(len(joined[joined[polygon_label] == i])/len(joined[polygon_label].unique()), ndigits=3)
+                    counts.append(count*10)
+            else:
+                for i in joined[polygon_label][joined.Class == select_class].unique():
+                    count = round(len(joined[joined[polygon_label] == i][joined.Class == select_class])/len(joined[joined.Class == select_class]), ndigits=3)
+                    counts.append(count*100)
+            if select_class == 'All samples':
+                bar = px.bar(y=joined[polygon_label].unique(), x=counts, orientation='h', labels={'x':'Probability (%)', 'y':'Polygon Label'}, color=joined[polygon_label].unique())
+                bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', showlegend=False)
+            else:
+                bar = px.bar(y=joined[polygon_label][joined.Class == select_class].unique(), x=counts, orientation='h', labels={'x':'Probability (%)', 'y':'Polygon Label'}, color=joined[polygon_label][joined.Class == select_class].unique())
+                bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', showlegend=False)
 
             return bar, markdowns
 
         except ValueError as e:
-            print('deu value error')
+            print('Got Value error')
             print(e)
             return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
         except AttributeError as e:
-            print('deu attribute error')
+            print('Got Attribute error')
             print(e)
             return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
         except KeyError as e:
-            print('deu key error')
+            print('Got Key error')
             print(e)
             return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
 
+# Logprob and Cluster Callback
 @app.callback(
     [Output('prob-graph', 'figure'),
      Output('cluster-graph', 'figure'),
      Output('Clustered Table', 'data'),
-     Output('Clustered Table', 'columns')],        # A saída é a figura do gráfico
+     Output('Clustered Table', 'columns')],
     [Input('select-element', 'value'),
      Input('Data Table', 'data'),
      Input('prob-graph', 'selectedData'),
-     Input('logprob-mode', 'value')])                 # Entrada: valor da tabela,
+     Input('logprob-mode', 'value')])
 def update_graph(element_column, data_dict, selectedData, mode):
     if element_column == None:
         return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)], [{"name": '', "id": ''} for i in range(0,6)]
@@ -206,12 +222,12 @@ def update_graph(element_column, data_dict, selectedData, mode):
         cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
         return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
 
-
+# Frequency Table Callback
 @app.callback(
     [Output('Freq Table', 'data'),
-     Output('logprob-mode', 'value')], # A saída são as dados da tabela
+     Output('logprob-mode', 'value')],
     [Input('select-element', 'value'),
-     Input('Data Table', 'data')])             # Entrada: valor da tabela
+     Input('Data Table', 'data')])
 def update_freq(element_column, data_dict):
     if element_column == None:
         return [{"name": '', "id": ''} for i in range(0,6)], 'cluster-mode'
@@ -241,7 +257,7 @@ def parse_contents(contents, filename):
 
     return columns, data
 
-@app.callback([Output('select-poly', 'options'),
+@app.callback([Output('select-poly', 'options'),        # Geojson Callback
                Output('select-poly', 'value'),
                Output('Geojson Table', 'data'),
                Output('Geojson Table', 'columns')],
@@ -264,7 +280,7 @@ def update_geojson(list_of_contents, list_of_names):
 
         return markdowns, None, data, columns
 
-
+# Upload Data Callback
 @app.callback([Output('Data Table', 'data'),
               Output('Data Table', 'columns'),
               Output('select-element', 'options'),
