@@ -31,23 +31,19 @@ app.layout = dashboard
     [Input('select-download', 'value'),
      Input('Freq Table', 'data'),
      Input('Clustered Table', 'data')])
-def update_download_link(selected_table, cluster_dict, freq_dict):
+def update_download_link(selected_table, freq_dict, cluster_dict):
     if selected_table == None:
         return None
     if selected_table == 'freq-table':
         df = pd.DataFrame.from_dict(freq_dict, 'columns')
-        print(df.columns)
         csv_string = df.to_csv(index=False, encoding='ISO-8859-1')
-        print(csv_string)
-        csv_string = "data:text/csv;charset=ISO-8859-1," + urllib.parse.quote(csv_string)
+        csv_string = "data:text/csv;charset=iso-8859-1," + '\uFEFF'  + urllib.parse.quote(csv_string)
 
         return csv_string
     if selected_table == 'cluster-table':
         df = pd.DataFrame.from_dict(cluster_dict, 'columns')
-        print(df.columns)
         csv_string = df.to_csv(index=False, encoding='ISO-8859-1')
-        print(csv_string)
-        csv_string = "data:text/csv;charset=ISO-8859-1," + urllib.parse.quote(csv_string)
+        csv_string = "data:text/csv;charset=iso-8859-1," + '\uFEFF'  + urllib.parse.quote(csv_string)
 
         return csv_string
 
