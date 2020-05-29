@@ -40,8 +40,9 @@ def parse_geojson(contents, filename):
         if 'geojson' in filename:
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
-            geojson = decoded.decode("ISO-8859-1")
-            geodf = gpd.read_file(geojson)
+            geojson = decoded.decode("utf-8")
+            geodf = gpd.read_file(geojson, encoding="ISO-8859-1")
+            print(geodf['NOME_UNIDA'].unique())
             geodf['geometry'] = geodf['geometry'].astype(str)
 
     except Exception as e:
