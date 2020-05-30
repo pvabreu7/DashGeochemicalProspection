@@ -260,25 +260,34 @@ def parse_contents(contents, filename):
 @app.callback([Output('select-poly', 'options'),        # Geojson Callback
                Output('select-poly', 'value'),
                Output('Geojson Table', 'data'),
-               Output('Geojson Table', 'columns')],
+               Output('Geojson Table', 'columns'),
+               Output('alert-geojson', 'color'),
+               Output('alert-geojson', 'children')],
                [Input('upload-shapes', 'contents')],
                [State('upload-shapes', 'filename')])
 def update_geojson(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"label": '', "value": ''} for i in range(0,1)], None, [{"name": '', "id": ''} for i in range(0,6)], [{"name": '', "id": ''} for i in range(0,6)]
+        return [{"label": '', "value": ''} for i in range(0,1)],\
+               None, [{"name": '', "id": ''} for i in range(0,6)],\
+               [{"name": '', "id": ''} for i in range(0,6)], 'light', "No geojson data loaded."
     else:
-        children = [
-            geo.parse_geojson(c, n) for c, n in
-            zip(list_of_contents, list_of_names)]
-        columns, data = children[0]
-        values = []
-        for i in columns:
-            if i['name'][0:7] != 'Unnamed' and i['name'][0:7] != 'geometry':
-                values.append(i['name'])
-        markdowns = [{"label": i, "value": i} for i in values]
-        columns = [{"name": i, "id": i} for i in values]
+        try:
+            children = [
+                geo.parse_geojson(c, n) for c, n in
+                zip(list_of_contents, list_of_names)]
+            columns, data = children[0]
+            values = []
+            for i in columns:
+                if i['name'][0:7] != 'Unnamed' and i['name'][0:7] != 'geometry':
+                    values.append(i['name'])
+            markdowns = [{"label": i, "value": i} for i in values]
+            columns = [{"name": i, "id": i} for i in values]
 
-        return markdowns, None, data, columns
+            return markdowns, None, data, columns, 'success', "Geojson data loaded!"
+        except:
+            return [{"label": '', "value": ''} for i in range(0, 1)], \
+                   None, [{"name": '', "id": ''} for i in range(0, 6)], \
+                   [{"name": '', "id": ''} for i in range(0, 6)], 'danger', "Error loading Geojson."
 
 # Upload Data Callback
 @app.callback([Output('Data Table', 'data'),
@@ -288,24 +297,34 @@ def update_geojson(list_of_contents, list_of_names):
               Output('select-lon', 'options'),
               Output('select-lon', 'value'),
               Output('select-lat', 'options'),
-              Output('select-lat', 'value')],
+              Output('select-lat', 'value'),
+              Output('alert-csv', 'color'),
+              Output('alert-csv', 'children')],
               [Input('upload-data', 'contents')],
               [State('upload-data', 'filename')])
 def update_output(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"name": '', "id": ''} for i in range(0,15)], [{"name": '', "id": ''} for i in range(0,6)], [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,6)], None
+        return [{"name": '', "id": ''} for i in range(0,15)], [{"name": '', "id": ''} for i in range(0,6)],\
+               [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,1)], None,\
+               [{"label": '', "value": ''} for i in range(0,6)], None, 'light', "No csv data loaded"
     if list_of_contents is not None:
-        children = [
-            parse_contents(c, n) for c, n in
-            zip(list_of_contents, list_of_names)]
-        columns, data = children[0]
-        values = []
-        for i in columns:
-            if i['name'][0:7] != 'Unnamed':
-                values.append(i['name'])
-        markdowns = [{"label": i, "value": i} for i in values]
-        columns = [{"name": i, "id": i} for i in values]
-        return data, columns, markdowns, None, markdowns, None, markdowns, None
+        try:
+            children = [
+                parse_contents(c, n) for c, n in
+                zip(list_of_contents, list_of_names)]
+            columns, data = children[0]
+            values = []
+            for i in columns:
+                if i['name'][0:7] != 'Unnamed':
+                    values.append(i['name'])
+            markdowns = [{"label": i, "value": i} for i in values]
+            columns = [{"name": i, "id": i} for i in values]
+            return data, columns, markdowns, None, markdowns, None, markdowns, None, "success", "Csv data loaded!"
+        except:
+            return [{"name": '', "id": ''} for i in range(0, 15)], [{"name": '', "id": ''} for i in range(0, 6)],\
+                   [{"label": '', "value": ''} for i in range(0, 1)], None, [{"label": '', "value": ''} for i in range(0, 1)],\
+                   None, [{"label": '', "value": ''} for i in range(0,6)], None, 'danger', "Error loading csv data"
+
 
 # Map Callbacks:
 @app.callback(
