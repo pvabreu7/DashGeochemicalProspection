@@ -20,8 +20,8 @@ map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": 
 map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 
 # Style:
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+external_stylesheets = 'https://codepen.io/pvabreu7/pen/ZEbgQpd.css'
+app = dash.Dash(__name__, external_stylesheets=[external_stylesheets])
 
 app.layout = dashboard
 
