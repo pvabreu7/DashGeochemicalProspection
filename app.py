@@ -2,6 +2,7 @@ import base64
 import io
 import dash
 import dash_html_components as html # Possui um componente para cada tag html
+
 from dash.dependencies import Input, Output, State
 from yellowbrick.cluster import KElbowVisualizer
 from sklearn.cluster import KMeans
@@ -24,6 +25,7 @@ external_stylesheets = 'https://codepen.io/pvabreu7/pen/ZEbgQpd.css'
 app = dash.Dash(__name__, external_stylesheets=[external_stylesheets])
 
 app.layout = dashboard
+app.title = 'Geochemical Prospection'
 
 # Download table Callback
 @app.callback(
@@ -106,8 +108,6 @@ def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, pol
             geojson_df['geometry'] = geojson_df['geometry'].apply(wkt.loads)
 
             joined = geo.spatial_join(cluster_df, lon, lat, geojson_df)
-            print(joined.Class.unique())
-            print(joined[polygon_label].unique())
             counts = []
             if select_class == 'All samples':
                 for i in joined[polygon_label].unique():
@@ -118,10 +118,10 @@ def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, pol
                     count = round(len(joined[joined[polygon_label] == i][joined.Class == select_class])/len(joined[joined.Class == select_class]), ndigits=3)
                     counts.append(count*100)
             if select_class == 'All samples':
-                bar = px.bar(y=joined[polygon_label].unique(), x=counts, orientation='h', labels={'x':'Probability (%)', 'y':'Polygon Label'}, color=joined[polygon_label].unique())
+                bar = px.bar(y=joined[polygon_label].unique(), x=counts, orientation='h', labels={'x':'Relative Frequency (%)', 'y':'Polygon Label'}, color=joined[polygon_label].unique())
                 bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', showlegend=False)
             else:
-                bar = px.bar(y=joined[polygon_label][joined.Class == select_class].unique(), x=counts, orientation='h', labels={'x':'Probability (%)', 'y':'Polygon Label'}, color=joined[polygon_label][joined.Class == select_class].unique())
+                bar = px.bar(y=joined[polygon_label][joined.Class == select_class].unique(), x=counts, orientation='h', labels={'x':'Relative Frequency (%)', 'y':'Polygon Label'}, color=joined[polygon_label][joined.Class == select_class].unique())
                 bar.update_layout(margin={'l': 60, 'b': 30, 't': 40, 'r': 60}, paper_bgcolor='#f9f9f9', showlegend=False)
 
             return bar, markdowns
@@ -174,7 +174,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
             lambda row: 'Anomalous Sample' if row['Probability'] <= max_prob else 'Background Sample', axis=1)
 
         probgraf_fig = px.scatter(x=originalData.Probability*100, y=originalData.Value, color=originalData.Class, log_y=True, log_x=True,
-                                  labels={'x':'Probability (%) ', 'y':str(element_column)+''})
+                                  labels={'x':'Relative Frequency (%) ', 'y':str(element_column)+''})
         probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h", legend=dict(x=-.1, y=1.2))
 
         cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
@@ -204,7 +204,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
         df_clustered = vislogprob.clustered_df(X.transpose(), visualizer.elbow_value_)
 
         probgraf_fig = px.scatter(x=df_clustered.Prob[::-1], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
-                                  labels={'x':'Probability (%) ', 'y':str(element_column)+''})
+                                  labels={'x':'Relative Frequency (%) ', 'y':str(element_column)+''})
         probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h", legend=dict(x=-.1, y=1.2))
 
         cluster_fig = px.line(x=visualizer.k_values_, y=visualizer.k_scores_, labels={'x':'Number of K clusters', 'y':'Distortion Score'}, range_y=[-5, np.max(visualizer.k_scores_)+np.mean(visualizer.k_scores_)/3])
@@ -409,6 +409,15 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
 
     else:
         return map_init_fig
+
+# Modal callback
+@app.callback(Output("modal-sm", "is_open"),
+             [Input("about", "n_clicks"), Input("close-sm", "n_clicks")],
+             [State("modal-sm", "is_open")])
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte
