@@ -33,6 +33,7 @@ dash = html.Div(children=[
                             ),
                             html.P(
                                 ["Application developed by Pedro Vitor Abreu ", " | ",
+                                 "Email: pvabreu7@gmail.com ", " | ",
                                  html.A('LinkedIn', href='https://www.linkedin.com/in/pedro-vitor-abreu-63ba6214a/', target="_blank"), ' | ',
                                  html.A('Github', href='https://github.com/pvabreu7', target="_blank"), ' | ',
                                  html.A('About the app', id='about'),
@@ -266,7 +267,9 @@ dash = html.Div(children=[
                 dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
                     dcc.Tab(children=[  # Data-Table
                         dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
-                                             style_table={'height':'400px', 'overflowX': 'scroll', 'overflowY': 'scroll'})
+                                             style_table={'height':'400px', 'overflowX': 'scroll', 'overflowY': 'scroll'},
+                                             style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
+                                             style_header={'backgroundColor': 'rgb(230, 230, 230)','fontWeight': 'bold'})
                     ], label='Data Table', value='tab-1', style={'font-size':'12px'}),
                     dcc.Tab(children=[
                         dash_table.DataTable(id='Freq Table', columns=[{'name': 'Lower limit', 'id': 'Lower limit'},
@@ -281,25 +284,41 @@ dash = html.Div(children=[
                                                                        {'name': 'Direct Cumulative Frequency (%)',
                                                                         'id': 'Direct Cumulative Frequency (%)'}],
                                              style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
+                                                          'height': '400px'},
+                                             style_data_conditional=[
+                                                 {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
+                                             style_header={'backgroundColor': 'rgb(230, 230, 230)',
+                                                           'fontWeight': 'bold'}
+                    )
                     ], label='Frequency Table', value='tab-2', style={'font-size':'12px'}), # Frequency Table
                     dcc.Tab(children=[  # Data-Table
                         dash_table.DataTable(id='Clustered Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
                                              style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
+                                                          'height': '400px'},
+                                             style_data_conditional=[
+                                                 {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
+                                             style_header={'backgroundColor': 'rgb(230, 230, 230)',
+                                                           'fontWeight': 'bold'}
+                    )
                     ], label='Clustered Table', value='tab-3', style={'font-size':'12px'}),
                     dcc.Tab(children=[  # Data-Table
                         dash_table.DataTable(id='Geojson Table',
                                              columns=[{"name": '', "id": ''} for i in range(0, 6)],
                                              style_table={'overflowX': 'scroll', 'overflowY': 'scroll',
-                                                          'height': '400px'})
+                                                          'height': '400px'},
+                                             style_data_conditional=[
+                                                 {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
+                                             style_header={'backgroundColor': 'rgb(230, 230, 230)',
+                                                           'fontWeight': 'bold'})
                     ], label='Geojson Data', value='tab-4', style={'font-size':'12px'})
                 ]),
                 html.Div([
                     html.Div([dcc.Dropdown(id='select-download', placeholder='Select Table for Download...', value='All samples', options=[{'label':'Frequency Table', 'value':'freq-table'}, {'label':'Clustered Table', 'value':'cluster-table'}])],
                              style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'float': 'left', 'display': 'inline-block'}),
+
+                    #dbc.Button('Download Table as Csv', id='download-link', href="", target="_blank",  style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'float': 'right'})
                     html.A(['Download Table as csv'], id='download-link',
-                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'float': 'right'}, className='button', download="datatable.csv", href="", target="_blank")
+                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'float': 'right'}, className='button',download="datatable.csv", href="", target="_blank")
                 ]),
 
             ]),
