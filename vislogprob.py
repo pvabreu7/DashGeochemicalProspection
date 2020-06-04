@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
-
+from scipy.stats import normaltest
 
 def logprob(data):
     y = np.sort(data)
@@ -10,88 +10,80 @@ def logprob(data):
     return x, y
 
 
-
-def determinar_param(dados):
-    n = dados.count()
-    k = 1 + 3.3*(np.log10(n))
-    T = np.max(dados)
-    t = np.min(dados)
-    Ai = (T-t)/k
-    std = np.std(dados)
-    #print(dados.describe())
-    return T, t, k, Ai, std
-
-
-
+def testar_norm(data):
+    k, p = normaltest(data)
+    alpha = 0.05
+    print("p = " + str(p))
+    if p < alpha:
+        # null hypothesis of the test is the data is normally distributed.
+        # If the p value returned is less than . 05 , then the null hypothesis
+        # is rejected and there is evidence that the data is not from a normally distributed population
+        print("The null hypothesis can be rejected. Data probably not normally distributed.")
+        return 'doane'
+    else:
+        print("The null hypothesis cannot be rejected. Data probably is normally distributed.")
+        return 'sturges'
+    # plt.hist(data)
 
 def classes_frequencias(dados):
-    classe1 = []
-    classe2 = []
-    classe3 = []
-    classe4 = []
-    classe5 = []
-    classe6 = []
-    classe7 = []
-    classe8 = []
-    classe9 = []
-    contagem = []
+    dist_type = testar_norm(dados)
 
-    maximo, minimo, k, Ai, std = determinar_param(dados)
+    classes = np.histogram_bin_edges(dados, bins=dist_type)
+    print('número de classes: ' + str(len(classes) - 1))
+    print('intervalos: ' + str(classes))
 
-    for i in dados:    
-        if i >= i and i < Ai:
-            classe1.append(i)
-        
-        if i >= Ai and i < 2*Ai:
-            classe2.append(i)
-    
-        if i >= 2*Ai and i < 3*Ai:
-            classe3.append(i)
-    
-        if i >= 3*Ai and i < 4*Ai:
-            classe4.append(i)
-    
-        if i >= 4*Ai and i < 5*Ai:
-            classe5.append(i)
-    
-        if i >= 5*Ai and i < 6*Ai:
-            classe6.append(i)
-    
-        if i >= 6*Ai and i < 7*Ai:
-            classe7.append(i)
-    
-        if i >= 7*Ai and i < 8*Ai:
-            classe8.append(i)
-    
-        if i >= 8*Ai:
-            classe9.append(i)
-    
-    
-    contagem.append(float(len(classe1))); contagem.append(float(len(classe2))); contagem.append(float(len(classe3)));
-    contagem.append(float(len(classe4))); contagem.append(float(len(classe5))); contagem.append(float(len(classe6)));
-    contagem.append(float(len(classe7))); contagem.append(float(len(classe8))); contagem.append(float(len(classe9)))
+    n_classes = len(classes) - 1
 
-    freq_relativa = []
+    lista_classes = []
+    for i in range(0, n_classes):
+        lista_classes.append([])
 
-    for i in contagem:
-        freq = (i/315)*100
-        freq_relativa.append(freq)
-    
-    intervalos_min = []
-    intervalos_max = []
-    
-    for i in range(0,9):
-        intervalos_min.append(minimo +i*Ai)
-        
-    for i in range(1,9):
-        intervalos_max.append(i*Ai)
-    intervalos_max.append(maximo)
+    classe = 0
 
-    return contagem, freq_relativa, intervalos_min, intervalos_max
+    for sample in sorted(dados):
+        if sample >= classes[classe] and sample < classes[classe + 1]:
+            lista_classes[classe].append(sample)
+            # print(str(sample)+' adicionado na classe '+str(classe))
+        else:
+            for intervalo in range(0, n_classes):
+                if sample >= classes[intervalo] and sample <= classes[intervalo + 1]:
+                    # print('avançou da classe '+str(classe)+' para a classe '+str(intervalo))
+                    classe = intervalo
+                    # print(classe)
+                    lista_classes[classe].append(sample)
+                    # print(str(sample)+' adicionado na classe '+str(classe))
+
+    counts = []
+
+    for classe in range(0, len(lista_classes)):
+        counts.append(len(lista_classes[classe]))
+
+    relative_freq = []
+
+    for i in counts:
+        freq = (i / len(dados)) * 100
+        relative_freq.append(freq)
+
+    intervals_min = []
+    intervals_max = []
+
+    minimum = min(dados)
+    maximum = max(dados)
+
+    Ai = (max(dados) - min(dados)) / n_classes
+
+    for i in range(0, n_classes):
+        intervals_min.append(minimum + i * Ai)
+
+    for i in range(1, n_classes):
+        intervals_max.append(i * Ai)
+
+    intervals_max.append(maximum)
+
+    return counts, relative_freq, intervals_min, intervals_max
 
 
 def tabela_frequencias(dados):
-
     freq = pd.DataFrame()
 
     contagem, freq_relativa, intervalos_min, intervalos_max = classes_frequencias(dados)
@@ -99,23 +91,27 @@ def tabela_frequencias(dados):
     contagem = np.asarray(contagem)
     freq_relativa = np.asarray(freq_relativa)
     freq_acumulada = contagem.cumsum()
+
     freq_acum_dir = []
     for i in freq_acumulada:
-        freq_acum_dir.append(i/315)
+        freq_acum_dir.append((i / len(dados)) * 100)
     freq_acum_dir = np.asarray(freq_acum_dir)
+
     intervalos_min = np.asarray(intervalos_min)
     intervalos_max = np.asarray(intervalos_max)
+    # print(freq_relativa[::-1])
 
-    freq.insert(loc=0, column='Mínimo', value=intervalos_min)
-    freq.insert(loc=1, column='Máximo', value=intervalos_max)
-    freq.insert(loc=2, column='Mínimo (log)', value=np.log10(intervalos_min))
-    freq.insert(loc=3, column='Frequência Absoluta', value=contagem)
-    freq.insert(loc=4, column='Frequência Relativa (%)', value=freq_relativa)
-    freq.insert(loc=5, column='Frequência Acumulada', value=freq_acumulada)
-    freq.insert(loc=6, column='Frequência Acumulada Direta (%)', value=freq_acum_dir)
-    freq.insert(loc=7, column='Frequência Acumulada Invertida (%)', value=freq_acum_dir[::-1])
+    inverse_freq = []
+    for i in freq_relativa[::-1]:
+        inverse_freq.append(i)
 
-    freq.drop(axis=0, index=freq[freq['Frequência Absoluta'] == 0].index, inplace=True)
+    freq.insert(loc=0, column='Lower limit', value=intervalos_min)
+    freq.insert(loc=1, column='Upper limit', value=intervalos_max)
+    freq.insert(loc=2, column='Lower limit (log)', value=np.log10(intervalos_min))
+    freq.insert(loc=3, column='Absolut Frequency', value=contagem)
+    freq.insert(loc=4, column='Relative Frequency (%)', value=freq_relativa)
+    freq.insert(loc=5, column='Count', value=freq_acumulada)
+    freq.insert(loc=6, column='Direct Cumulative Frequency (%)', value=freq_acum_dir)
 
     return freq
 
