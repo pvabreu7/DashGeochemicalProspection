@@ -325,7 +325,7 @@ dash = html.Div(children=[
             html.Span(['How is the frequency table calculated?'], id='tooltip-freq', style={"textDecoration": "underline", "cursor": "pointer", 'font-size':'14px', 'display':'inline-block', 'width':'100%'}),
             dbc.Tooltip(
                 'Frequency Table is calculated by the Sturges and Doane rules for determining classes intervals. '
-                'Daone rule is a ',
+                'Doane rule is applied when the data is not normally distributed.',
                 target="tooltip-freq",
                 style={'font-size': '14px', 'border-radius': '6px', 'opacity': '0.9',
                        'background-color': '#3275a8'}
