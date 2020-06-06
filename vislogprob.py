@@ -2,6 +2,14 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from scipy.stats import normaltest
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import probscale
+import base64
+import io
+import seaborn as sns
+sns.set()
 
 def logprob(data):
     y = np.sort(data)
@@ -120,7 +128,7 @@ def clustered_df(X, n_clusters):
     model.fit(X)
     labels = model.predict(X)
     df_clustered = pd.DataFrame()
-    df_clustered.insert(0, 'Prob', X[:,0]*100)
+    df_clustered.insert(0, 'Relative Frequency (%)', X[:,0][::-1]*100)
     df_clustered.insert(1, 'Value', X[:,1])
     df_clustered.insert(2, 'Class', labels)
 
@@ -149,5 +157,31 @@ def clustered_df(X, n_clusters):
                 if row == n[0]
                 else row)
             ordem = ordem + 1
-
+    df_clustered.to_csv('df_clustered.csv')
     return df_clustered
+
+
+def probscale_plot(df, var):
+    fig, ax = plt.subplots(figsize=(7.5, 6))
+    plt.grid(True, which='both')
+
+    for n in df.Class.unique():
+        plt.plot(df['Relative Frequency (%)'][df.Class == n],
+                 df[var][df.Class == n], 'o',
+                 label=n, markersize=2.5)
+
+    plt.xlabel('Cumulative Frequency (%)')
+    plt.ylabel(str(var))
+    plt.legend()
+
+    ax.set_yscale('log')
+    ax.set_xlim(0.5, 99.5)
+    ax.set_xscale('prob')
+
+    buf = io.BytesIO() # in-memory files
+    plt.savefig(buf, format = "png") # save to the above file object
+    data = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
+    plt.close()
+
+    return data
+
