@@ -166,7 +166,7 @@ dash = html.Div(children=[
                         html.Div(
                             [
                                 html.P(children=['3. Log-probability curve:', html.Span(['?'], id='tooltip-logprob', style={'textAlign':'center', 'color':'white', "cursor": "pointer"}, className='dot')],
-                                       style={'textAlign': 'center', 'width': '50%', 'font-size': '16px',  'color': 'rgb(5, 75, 102)',
+                                       style={'textAlign': 'left', 'width': '41%', 'font-size': '16px',  'color': 'rgb(5, 75, 102)',
                                               'display': 'inline-block', 'float': 'left'}),
                                 dbc.Tooltip(
                                     'The cumulative distribution function displays the higher values first in a log-log scale '
@@ -180,7 +180,13 @@ dash = html.Div(children=[
                         ),
                         html.Div(
                             [
-                                dcc.RadioItems(id='logprob-mode', options=[{'label':'Cluster Mode', 'value':'cluster-mode'}, {'label':'Select Mode', 'value':'select-mode'}], labelStyle={'display': 'inline-block', 'margin-top':'3px'}, value='cluster-mode'),
+                                dcc.RadioItems(id='logprob-mode', options=[{'label':'Clusters', 'value':'cluster-mode'}, {'label':'Selection', 'value':'select-mode'}], labelStyle={'display': 'inline-block', 'margin-top':'3px', 'float':'left'}, value='cluster-mode'),
+                                html.Button('Prob Scale', id='prob-scale-button', style={'display': 'inline-block', 'width':'24%', 'margin-left':'8px', 'line-height':'3rem'}, className='button'),
+                                dbc.Modal([
+                                    dbc.ModalHeader('Log-Probability plot with Probability scaled axis:'),
+                                    dbc.ModalBody([html.Img(id='probscale-img')]),
+                                    dbc.ModalFooter(dbc.Button("Close", id="prob-scale-close", className="ml-auto"))
+                                ], id='prob-scale-modal', size="lg", centered=True)
                             ]
                         )
 
