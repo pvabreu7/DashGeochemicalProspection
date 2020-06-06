@@ -272,7 +272,7 @@ dash = html.Div(children=[
             html.Div([  # Div para as tabs
                 dcc.Tabs(id='tabs', value='tab-1', children=[  # componente tabs
                     dcc.Tab(children=[  # Data-Table
-                        dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)],
+                        dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)], data=[{"name": '', "id": ''} for i in range(0,11)],
                                              style_table={'height':'400px', 'overflowX': 'scroll', 'overflowY': 'scroll'},
                                              style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)','fontWeight': 'bold'})
@@ -294,7 +294,8 @@ dash = html.Div(children=[
                                              style_data_conditional=[
                                                  {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)',
-                                                           'fontWeight': 'bold'}
+                                                           'fontWeight': 'bold'},
+                                             data=[{"name": '', "id": ''} for i in range(0,11)]
                     )
                     ], label='Frequency Table', value='tab-2', style={'font-size':'12px'}), # Frequency Table
                     dcc.Tab(children=[  # Data-Table
@@ -304,7 +305,8 @@ dash = html.Div(children=[
                                              style_data_conditional=[
                                                  {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)',
-                                                           'fontWeight': 'bold'}
+                                                           'fontWeight': 'bold'},
+                                             data=[{"name": '', "id": ''} for i in range(0,11)]
                     )
                     ], label='Clustered Table', value='tab-3', style={'font-size':'12px'}),
                     dcc.Tab(children=[  # Data-Table
@@ -315,7 +317,8 @@ dash = html.Div(children=[
                                              style_data_conditional=[
                                                  {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)',
-                                                           'fontWeight': 'bold'})
+                                                           'fontWeight': 'bold'},
+                                             data=[{"name": '', "id": ''} for i in range(0,11)])
                     ], label='Geojson Data', value='tab-4', style={'font-size':'12px'})
                 ]),
                 html.Div([
