@@ -35,7 +35,7 @@ app.title = 'Geochemical Prospection'
      Input('Clustered Table', 'data')])
 def update_download_link(selected_table, freq_dict, cluster_dict):
     if selected_table == None:
-        return None
+        raise dash.exceptions.PreventUpdate
     if selected_table == 'freq-table':
         df = pd.DataFrame.from_dict(freq_dict, 'columns')
         csv_string = df.to_csv(index=False, encoding='ISO-8859-1')
@@ -59,7 +59,7 @@ def update_download_link(selected_table, freq_dict, cluster_dict):
 )
 def update_dists(element_column, cluster_dict, selected_plot):
     if element_column == None:
-        return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
+        raise dash.exceptions.PreventUpdate
     if element_column != None:
         try:
             df = pd.DataFrame.from_dict(cluster_dict, 'columns')
@@ -96,7 +96,7 @@ def update_dists(element_column, cluster_dict, selected_plot):
 )
 def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, polygon_label, select_class):
     if select_element == None or geojson_dict == None or polygon_label == None or lon == None or lat == None:
-        return init_fig, [{"label": '', "value": ''} for i in range(0,1)]
+        raise dash.exceptions.PreventUpdate
     else:
         try:
             cluster_df = pd.DataFrame.from_dict(cluster_dict, 'columns')
@@ -150,8 +150,8 @@ def update_spatialjoin(select_element, cluster_dict, geojson_dict, lon, lat, pol
      Input('prob-graph', 'selectedData'),
      Input('logprob-mode', 'value')])
 def update_graph(element_column, data_dict, selectedData, mode):
-    if element_column == None:
-        return init_fig, init_fig, [{"name": '', "id": ''} for i in range(0, 6)], [{"name": '', "id": ''} for i in range(0,6)]
+    if element_column is None:
+        raise dash.exceptions.PreventUpdate
 
     if selectedData != None and mode == 'select-mode':
         df = pd.DataFrame.from_dict(data_dict, 'columns')
@@ -162,7 +162,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
         visualizer.fit(X.transpose())
 
         originalData = pd.DataFrame()
-        originalData.insert(0, 'Probability', x)
+        originalData.insert(0, 'Relative Frequency (%)', x)
         originalData.insert(1, 'Value', y[::-1])
 
         selected_x = []
@@ -171,9 +171,9 @@ def update_graph(element_column, data_dict, selectedData, mode):
 
         max_prob = np.max(selected_x)*0.01
         originalData['Class'] = originalData.apply(
-            lambda row: 'Anomalous Sample' if row['Probability'] <= max_prob else 'Background Sample', axis=1)
+            lambda row: 'Anomalous Sample' if row['Relative Frequency (%)'] <= max_prob else 'Background Sample', axis=1)
 
-        probgraf_fig = px.scatter(x=originalData.Probability*100, y=originalData.Value, color=originalData.Class, log_y=True, log_x=True,
+        probgraf_fig = px.scatter(x=originalData['Relative Frequency (%)']*100, y=originalData.Value, color=originalData.Class, log_y=True, log_x=True,
                                   labels={'x':'Relative Frequency (%) ', 'y':str(element_column)+''})
         probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h", legend=dict(x=-.1, y=1.2))
 
@@ -189,6 +189,8 @@ def update_graph(element_column, data_dict, selectedData, mode):
 
         merged_df = df.merge(originalData, left_on=element_column, right_on='Value')
         merged_df = merged_df.drop(axis=1, labels='Value')
+        merged_df['Relative Frequency (%)'] = merged_df['Relative Frequency (%)']*100
+
         cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
 
         return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
@@ -203,7 +205,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
 
         df_clustered = vislogprob.clustered_df(X.transpose(), visualizer.elbow_value_)
 
-        probgraf_fig = px.scatter(x=df_clustered.Prob[::-1], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
+        probgraf_fig = px.scatter(x=df_clustered['Relative Frequency (%)'], y=df_clustered.Value, color=df_clustered.Class, log_y=True, log_x=True,
                                   labels={'x':'Relative Frequency (%) ', 'y':str(element_column)+''})
         probgraf_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h", legend=dict(x=-.1, y=1.2))
 
@@ -219,6 +221,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
 
         merged_df = df.merge(df_clustered, left_on=element_column, right_on='Value')
         merged_df = merged_df.drop(axis=1, labels='Value')
+        #print(merged_df[merged_df.Class == 'Anomalous Sample'])
         cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
         return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
 
@@ -230,7 +233,7 @@ def update_graph(element_column, data_dict, selectedData, mode):
      Input('Data Table', 'data')])
 def update_freq(element_column, data_dict):
     if element_column == None:
-        return [{"name": '', "id": ''} for i in range(0,6)], 'cluster-mode'
+        raise dash.exceptions.PreventUpdate
     else:
         df = pd.DataFrame.from_dict(data_dict, 'columns')
         freq_df = vislogprob.tabela_frequencias(df[element_column])
@@ -267,9 +270,7 @@ def parse_contents(contents, filename):
                [State('upload-shapes', 'filename')])
 def update_geojson(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"label": '', "value": ''} for i in range(0,1)],\
-               None, [{"name": '', "id": ''} for i in range(0,6)],\
-               [{"name": '', "id": ''} for i in range(0,6)], 'light', "No geojson data loaded."
+        raise dash.exceptions.PreventUpdate
     else:
         try:
             children = [
@@ -304,9 +305,7 @@ def update_geojson(list_of_contents, list_of_names):
               [State('upload-data', 'filename')])
 def update_output(list_of_contents, list_of_names):
     if list_of_contents is None:
-        return [{"name": '', "id": ''} for i in range(0,15)], [{"name": '', "id": ''} for i in range(0,6)],\
-               [{"label": '', "value": ''} for i in range(0,1)], None, [{"label": '', "value": ''} for i in range(0,1)], None,\
-               [{"label": '', "value": ''} for i in range(0,6)], None, 'light', "No csv data loaded"
+        raise dash.exceptions.PreventUpdate
     if list_of_contents is not None:
         try:
             children = [
@@ -342,6 +341,9 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
                                         mapbox_style="carto-positron", zoom=3)
     map_init_fig.update_layout(margin={"r": 10, "t": 10, "l": 10, "b": 10}, paper_bgcolor='#f9f9f9')
     geodf = pd.DataFrame.from_dict(geo_dict, 'columns')
+
+    if data_dict is None and geo_dict is None:
+        raise dash.exceptions.PreventUpdate
 
     if lon == None or lat == None:
         if geo_column == None:
@@ -410,7 +412,7 @@ def update_map(data_dict, cluster_dict, lon, lat, element_column, geo_dict, geo_
     else:
         return map_init_fig
 
-# Modal callback
+# Modal callbacks
 @app.callback(Output("modal-sm", "is_open"),
              [Input("about", "n_clicks"), Input("close-sm", "n_clicks")],
              [State("modal-sm", "is_open")])
@@ -418,6 +420,28 @@ def toggle_modal(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
+
+@app.callback(Output('prob-scale-modal', 'is_open'),
+              [Input('prob-scale-button', 'n_clicks'), Input('prob-scale-close', 'n_clicks')],
+              [State('prob-scale-modal', 'is_open')])
+def toggle_probscale(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
+
+# Matplotlib probability scale:
+
+@app.callback(
+    Output('probscale-img', 'src'), # src attribute
+    [Input('select-element', 'value'),
+     Input('Clustered Table', 'data')]
+)
+def update_figure(var, data_dict):
+    if data_dict is None or var is None:
+        raise dash.exceptions.PreventUpdate
+    df = pd.DataFrame.from_dict(data_dict, 'columns')
+    data = vislogprob.probscale_plot(df, var)
+    return "data:image/png;base64,{}".format(data)
 
 if __name__ == '__main__':
     app.run_server(debug=True)   # Atualiza a página automaticamente com modificações do código fonte
