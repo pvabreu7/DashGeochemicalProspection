@@ -86,17 +86,7 @@ dash = html.Div(children=[
                             'Drag and Drop or ',
                             html.A('Select Files')
                         ]),
-                        style={
-                            'width': '100%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin-top':'8px',
-                            'margin-bottom':'8px'
-                        },
+                        className='dragdrop',
                         # Allow multiple files to be uploaded
                         multiple=True
                     )),
@@ -123,17 +113,7 @@ dash = html.Div(children=[
                             'Drag and Drop or ',
                             html.A('Select Files')
                         ]),
-                        style={
-                            'width': '100%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin-top':'8px',
-                            'margin-bottom':'8px'
-                        },
+                        className='dragdrop',
                         # Allow multiple files to be uploaded
                         multiple=True
                     )),
@@ -323,7 +303,7 @@ dash = html.Div(children=[
                 ]),
                 html.Div([
                     html.Div([dcc.Dropdown(id='select-download', placeholder='Select Table for Download...', value='All samples', options=[{'label':'Frequency Table', 'value':'freq-table'}, {'label':'Clustered Table', 'value':'cluster-table'}])],
-                             style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'float': 'left', 'display': 'inline-block'}),
+                             style={'margin-top': '14px', 'margin-bottom': '10px', 'width': '48%', 'float': 'left', 'display': 'inline-block'}),
 
                     #dbc.Button('Download Table as Csv', id='download-link', href="", target="_blank",  style={'margin-top': '10px', 'margin-bottom': '10px', 'width': '48%', 'display': 'inline-block', 'float': 'right'})
                     html.A(['Download Table as csv'], id='download-link',
