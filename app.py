@@ -188,8 +188,9 @@ def update_graph(element_column, data_dict, selectedData, mode):
         cluster_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
         merged_df = df.merge(originalData, left_on=element_column, right_on='Value')
-        merged_df = merged_df.drop(axis=1, labels='Value')
-        merged_df['Relative Frequency (%)'] = merged_df['Relative Frequency (%)']*100
+        merged_df = merged_df.drop(axis=1, labels=['Value', 'Relative Frequency (%)'])
+        merged_df.drop_duplicates(inplace=True)
+        merged_df.sort_values(axis=0, by=element_column, inplace=True)
 
         cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
 
@@ -219,9 +220,12 @@ def update_graph(element_column, data_dict, selectedData, mode):
                                    line=dict(dash='dashdot', color='#EF553B')))
         cluster_fig.update_layout(margin={'l': 10, 'b': 10, 't': 10, 'r': 10}, paper_bgcolor='#f9f9f9', legend_orientation="h")
 
+
+
         merged_df = df.merge(df_clustered, left_on=element_column, right_on='Value')
-        merged_df = merged_df.drop(axis=1, labels='Value')
-        #print(merged_df[merged_df.Class == 'Anomalous Sample'])
+        merged_df = merged_df.drop(axis=1, labels=['Value', 'Relative Frequency (%)'])
+        merged_df.drop_duplicates(inplace=True)
+        merged_df.sort_values(axis=0, by=element_column, inplace=True)
         cluster_columns = [{"name": i, "id": i} for i in merged_df.columns]
         return probgraf_fig, cluster_fig, merged_df.to_dict('records'), cluster_columns
 
@@ -440,6 +444,8 @@ def update_figure(var, data_dict):
     if data_dict is None or var is None:
         raise dash.exceptions.PreventUpdate
     df = pd.DataFrame.from_dict(data_dict, 'columns')
+    if len(df.columns) == 2:
+        raise dash.exceptions.PreventUpdate
     data = vislogprob.probscale_plot(df, var)
     return "data:image/png;base64,{}".format(data)
 

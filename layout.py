@@ -149,9 +149,9 @@ dash = html.Div(children=[
                                        style={'textAlign': 'left', 'width': '41%', 'font-size': '16px',  'color': 'rgb(5, 75, 102)',
                                               'display': 'inline-block', 'float': 'left'}),
                                 dbc.Tooltip(
-                                    'The cumulative distribution function displays the higher values first in a log-log scale '
-                                    'so that the anomalous samples are more detailed. '
-                                    'You can switch to "Select Mode" to select anomalous samples manually.',
+                                    'Toggle "Cluster" to utilize Kmeans clustering with the optimized  number "K" of classes.'
+                                    'Toggle to "Select" to select the anomalous samples manually by selecting them on the graph.'
+                                    'You can press the "Prob Scale" button to generate a graph with a probability scale axis.',
                                     target="tooltip-logprob",
                                     style={'font-size': '14px', 'border-radius': '6px', 'opacity': '0.9',
                                            'background-color': '#3275a8'}
@@ -163,8 +163,7 @@ dash = html.Div(children=[
                                 dcc.RadioItems(id='logprob-mode', options=[{'label':'Clusters', 'value':'cluster-mode'}, {'label':'Selection', 'value':'select-mode'}], labelStyle={'display': 'inline-block', 'margin-top':'3px', 'float':'left'}, value='cluster-mode'),
                                 html.Button('Prob Scale', id='prob-scale-button', style={'display': 'inline-block', 'width':'24%', 'margin-left':'8px', 'line-height':'3rem'}, className='button'),
                                 dbc.Modal([
-                                    dbc.ModalHeader('Log-Probability plot with Probability scaled axis:'),
-                                    dbc.ModalBody([html.Img(id='probscale-img')]),
+                                    dbc.ModalBody([html.Img(id='probscale-img')], style={'margin-left':'6px'}),
                                     dbc.ModalFooter(dbc.Button("Close", id="prob-scale-close", className="ml-auto"))
                                 ], id='prob-scale-modal', size="lg", centered=True)
                             ]
@@ -183,7 +182,7 @@ dash = html.Div(children=[
         html.Div([
             html.P(children=['4. Spatial Overview:', html.Span(['?'], id='tooltip-spatial', style={'textAlign':'center', 'color':'white', "cursor": "pointer"}, className='dot')], style={'textAlign': 'center', 'color': 'rgb(5, 75, 102)', 'font-size':'16px'}),
             dbc.Tooltip(
-                'All of the data must be utilizing geographic coordinate systems to plotted on the map.',
+                'All of the data must be utilizing geographic coordinate systems in order to be plotted on the map.',
                 target="tooltip-spatial",
                 style={'font-size': '14px', 'border-radius': '6px', 'opacity': '0.9',
                        'background-color': '#3275a8'}
@@ -255,7 +254,7 @@ dash = html.Div(children=[
                         dash_table.DataTable(id='Data Table', columns=[{"name": '', "id": ''} for i in range(0, 6)], data=[{"name": '', "id": ''} for i in range(0,11)],
                                              style_table={'height':'400px', 'overflowX': 'scroll', 'overflowY': 'scroll'},
                                              style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
-                                             style_header={'backgroundColor': 'rgb(230, 230, 230)','fontWeight': 'bold'})
+                                             style_header={'backgroundColor': 'rgb(230, 230, 230)','fontWeight': 'bold'}, page_action='none')
                     ], label='Data Table', value='tab-1', style={'font-size':'12px'}),
                     dcc.Tab(children=[
                         dash_table.DataTable(id='Freq Table', columns=[{'name': 'Lower limit', 'id': 'Lower limit'},
@@ -275,7 +274,7 @@ dash = html.Div(children=[
                                                  {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)',
                                                            'fontWeight': 'bold'},
-                                             data=[{"name": '', "id": ''} for i in range(0,11)]
+                                             data=[{"name": '', "id": ''} for i in range(0,11)], page_action='none'
                     )
                     ], label='Frequency Table', value='tab-2', style={'font-size':'12px'}), # Frequency Table
                     dcc.Tab(children=[  # Data-Table
@@ -286,7 +285,7 @@ dash = html.Div(children=[
                                                  {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)',
                                                            'fontWeight': 'bold'},
-                                             data=[{"name": '', "id": ''} for i in range(0,11)]
+                                             data=[{"name": '', "id": ''} for i in range(0,11)], page_action='none'
                     )
                     ], label='Clustered Table', value='tab-3', style={'font-size':'12px'}),
                     dcc.Tab(children=[  # Data-Table
@@ -298,7 +297,7 @@ dash = html.Div(children=[
                                                  {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}],
                                              style_header={'backgroundColor': 'rgb(230, 230, 230)',
                                                            'fontWeight': 'bold'},
-                                             data=[{"name": '', "id": ''} for i in range(0,11)])
+                                             data=[{"name": '', "id": ''} for i in range(0,11)], page_action='none')
                     ], label='Geojson Data', value='tab-4', style={'font-size':'12px'})
                 ]),
                 html.Div([

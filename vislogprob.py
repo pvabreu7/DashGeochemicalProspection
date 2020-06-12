@@ -14,22 +14,20 @@ sns.set()
 def logprob(data):
     y = np.sort(data)
     x = np.arange(1, len(y)+1)/len(y)
-
     return x, y
 
 
 def testar_norm(data):
     k, p = normaltest(data)
     alpha = 0.05
-    print("p = " + str(p))
     if p < alpha:
         # null hypothesis of the test is the data is normally distributed.
         # If the p value returned is less than . 05 , then the null hypothesis
         # is rejected and there is evidence that the data is not from a normally distributed population
-        print("The null hypothesis can be rejected. Data probably not normally distributed.")
+        #print("The null hypothesis can be rejected. Data probably not normally distributed.")
         return 'doane'
     else:
-        print("The null hypothesis cannot be rejected. Data probably is normally distributed.")
+        #print("The null hypothesis cannot be rejected. Data probably is normally distributed.")
         return 'sturges'
     # plt.hist(data)
 
@@ -37,8 +35,8 @@ def classes_frequencias(dados):
     dist_type = testar_norm(dados)
 
     classes = np.histogram_bin_edges(dados, bins=dist_type)
-    print('número de classes: ' + str(len(classes) - 1))
-    print('intervalos: ' + str(classes))
+    #print('número de classes: ' + str(len(classes) - 1))
+    #print('intervalos: ' + str(classes))
 
     n_classes = len(classes) - 1
 
@@ -162,6 +160,10 @@ def clustered_df(X, n_clusters):
 
 
 def probscale_plot(df, var):
+    x, y = logprob(df[var].values)
+    df['Relative Frequency (%)'] = np.sort(x)[::-1]*100
+    df.sort_values(axis=0, by=var, ascending=False)
+
     fig, ax = plt.subplots(figsize=(7.5, 6))
     plt.grid(True, which='both')
 
