@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc # Bootstrap
 import dash_table
 import plotly.express as px
 
-init_fig = px.scatter(x=[], y=[], log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
+init_fig = px.scatter(x=None, y=None, log_x=True, log_y=True, labels={'x':'x axis', 'y':'y axis'})
 init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
 map_init_fig = px.choropleth_mapbox(locations=[0], center={"lat": -13.5, "lon": -48.5}, mapbox_style="carto-positron", zoom=4)
 map_init_fig.update_layout(margin={"r":10,"t":10,"l":10,"b":10}, paper_bgcolor='#f9f9f9')
