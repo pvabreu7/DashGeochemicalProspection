@@ -40,9 +40,15 @@ def parse_geojson(contents, filename):
         if 'geojson' in filename:
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
-            geojson = decoded.decode("ISO-8859-1")
-            geodf = gpd.read_file(geojson, encoding="ISO-8859-1")
-            geodf['geometry'] = geodf['geometry'].astype(str)
+            try:
+                geojson = decoded.decode("utf-8")
+                geodf = gpd.read_file(geojson, encoding="utf-8")
+                geodf['geometry'] = geodf['geometry'].astype(str)
+
+            except Exception as e:
+                geojson = decoded.decode("ISO-8859-1")
+                geodf = gpd.read_file(geojson, encoding="ISO-8859-1")
+                geodf['geometry'] = geodf['geometry'].astype(str)
 
     except Exception as e:
         print(e)
