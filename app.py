@@ -25,7 +25,7 @@ external_stylesheets = 'https://codepen.io/pvabreu7/pen/ZEbgQpd.css'
 app = dash.Dash(__name__, external_stylesheets=[external_stylesheets])
 
 app.layout = dashboard
-app.title = 'Geochemical Prospection'
+app.title = 'DEBUG Geochemical Prospection'
 
 # Download table Callback
 @app.callback(
